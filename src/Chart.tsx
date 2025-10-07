@@ -15,6 +15,8 @@ function* D3ChartInner(
   { width, height }: { width: number; height: number }
 ) {
   let chartMounted = false;
+  let selectedNode: d3.HierarchyCircularNode<NodeData> | null = null;
+  let hoveredNode: d3.HierarchyCircularNode<NodeData> | null = null;
 
   // Function to create the chart
   const createChart = () => {
@@ -68,11 +70,73 @@ function* D3ChartInner(
     );
 
     // Add a filled or stroked circle
-    node
+    const circles = node
       .append("circle")
-      .attr("fill", (d) => (d.children ? "#fff" : "#ddd"))
-      .attr("stroke", (d) => (d.children ? "#bbb" : null))
-      .attr("r", (d) => d.r);
+      .attr("fill", (d) => {
+        if (selectedNode === d) return "#4f46e5"; // selected: indigo
+        if (hoveredNode === d) return "#f59e0b"; // hovered: amber
+        return d.children ? "#fff" : "#ddd"; // default
+      })
+      .attr("stroke", (d) => {
+        if (selectedNode === d) return "#3730a3"; // selected: darker indigo
+        if (hoveredNode === d) return "#d97706"; // hovered: darker amber
+        return d.children ? "#bbb" : null; // default
+      })
+      .attr("stroke-width", (d) => {
+        if (selectedNode === d || hoveredNode === d) return 3;
+        return 1;
+      })
+      .attr("r", (d) => d.r)
+      .style("cursor", "pointer")
+      .on("mouseenter", function (_, d) {
+        hoveredNode = d;
+        // Update only the hovered circle
+        d3.select(this)
+          .transition()
+          .duration(150)
+          .attr("fill", "#f59e0b")
+          .attr("stroke", "#d97706")
+          .attr("stroke-width", 3);
+      })
+      .on("mouseleave", function (_, d) {
+        hoveredNode = null;
+        // Update only the circle that's no longer hovered
+        d3.select(this)
+          .transition()
+          .duration(150)
+          .attr(
+            "fill",
+            selectedNode === d ? "#4f46e5" : d.children ? "#fff" : "#ddd"
+          )
+          .attr(
+            "stroke",
+            selectedNode === d ? "#3730a3" : d.children ? "#bbb" : null
+          )
+          .attr("stroke-width", selectedNode === d ? 3 : 1);
+      })
+      .on("click", function (event, d) {
+        event.stopPropagation();
+        selectedNode = selectedNode === d ? null : d;
+
+        // Update all circles to reflect new selection state
+        circles
+          .transition()
+          .duration(200)
+          .attr("fill", (nodeData) => {
+            if (selectedNode === nodeData) return "#4f46e5";
+            if (hoveredNode === nodeData) return "#f59e0b";
+            return nodeData.children ? "#fff" : "#ddd";
+          })
+          .attr("stroke", (nodeData) => {
+            if (selectedNode === nodeData) return "#3730a3";
+            if (hoveredNode === nodeData) return "#d97706";
+            return nodeData.children ? "#bbb" : null;
+          })
+          .attr("stroke-width", (nodeData) => {
+            if (selectedNode === nodeData || hoveredNode === nodeData) return 3;
+            return 1;
+          });
+      });
 
     // Add a label to leaf nodes
     const text = node
