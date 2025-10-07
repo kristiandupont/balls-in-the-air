@@ -17,6 +17,7 @@ function* D3ChartInner(
   let chartMounted = false;
   let selectedNode: d3.HierarchyCircularNode<NodeData> | null = null;
   let hoveredNode: d3.HierarchyCircularNode<NodeData> | null = null;
+  let focusedData: NodeData | null = null; // when set, render from this node as root
 
   // Function to create the chart
   const createChart = () => {
@@ -34,13 +35,13 @@ function* D3ChartInner(
       .size([chartWidth - margin * 2, chartHeight - margin * 2])
       .padding(3);
 
-    // Compute the hierarchy from the JSON data
-    const root = pack(
-      d3
-        .hierarchy(data)
-        .sum((d) => d.value || 0)
-        .sort((a, b) => (b.value || 0) - (a.value || 0))
-    );
+    // Compute the hierarchy from the JSON data (or focused subtree)
+    const hierarchyRoot = d3
+      .hierarchy(focusedData ?? data)
+      .sum((d) => d.value || 0)
+      .sort((a, b) => (b.value || 0) - (a.value || 0));
+
+    const root = pack(hierarchyRoot);
 
     // Create the SVG container
     const svg = d3
@@ -138,6 +139,29 @@ function* D3ChartInner(
           });
       });
 
+    // Double click to focus/zoom into a node's subtree
+    circles.on("dblclick", function (event, d) {
+      event.stopPropagation();
+      // Only zoom if there are children to show; otherwise ignore
+      const datum = d.data as NodeData;
+      if (!d.children && !(datum.children && datum.children.length > 0)) {
+        return;
+      }
+      focusedData = datum;
+      // Reset selection/hover on zoom to avoid mismatched references
+      selectedNode = null;
+      hoveredNode = null;
+
+      // Re-render chart from focused subtree
+      const container = (this as SVGCircleElement).ownerSVGElement
+        ?.parentElement;
+      if (container) {
+        container.innerHTML = "";
+        const newChart = createChart();
+        container.appendChild(newChart.node()!);
+      }
+    });
+
     // Add a label to leaf nodes
     const text = node
       .filter((d) => !d.children && d.r > 10)
@@ -171,15 +195,35 @@ function* D3ChartInner(
     return svg;
   };
 
+  // Keyboard handler for Escape to reset zoom
+  const handleKeyDown = (e: KeyboardEvent) => {
+    if (e.key === "Escape" && focusedData) {
+      focusedData = null;
+      selectedNode = null;
+      hoveredNode = null;
+      // Find the rendered container and rebuild
+      const host = document.querySelector(
+        '[data-chart-host="circle-pack"]'
+      ) as HTMLDivElement | null;
+      if (host) {
+        host.innerHTML = "";
+        const chartSvg = createChart();
+        host.appendChild(chartSvg.node()!);
+      }
+    }
+  };
+
   for (const _ of this) {
     yield (
       <div
+        data-chart-host="circle-pack"
         ref={(el: HTMLDivElement | null) => {
           if (el && !chartMounted) {
             el.innerHTML = "";
             const chartSvg = createChart();
             el.appendChild(chartSvg.node()!);
             chartMounted = true;
+            window.addEventListener("keydown", handleKeyDown);
           }
         }}
         class="w-full h-full flex items-center justify-center"
