@@ -8,27 +8,19 @@ export interface NodeData {
   children?: NodeData[];
 }
 
-// CrankJS component that renders the D3 circle packing chart
-export function* D3CirclePackingChart(this: any) {
+// Inner component that creates the actual D3 chart
+function* D3ChartInner(
+  this: any,
+  { width, height }: { width: number; height: number }
+) {
   let chartMounted = false;
-  let svg: d3.Selection<SVGSVGElement, undefined, null, undefined> | null =
-    null;
-  let resizeObserver: ResizeObserver | null = null;
 
   // Function to create the chart
-  const createChart = (container: HTMLDivElement) => {
-    // Get container dimensions
-    const containerRect = container.getBoundingClientRect();
-    const size = Math.min(containerRect.width, containerRect.height) || 400; // fallback to 400px
-    const width = size;
-    const height = size;
+  const createChart = () => {
     const margin = 1; // to avoid clipping the root circle stroke
-
-    console.log("Creating chart with dimensions:", {
-      width,
-      height,
-      containerRect,
-    });
+    const size = Math.min(width, height);
+    const chartWidth = size;
+    const chartHeight = size;
 
     // Specify the number format for values
     const format = d3.format(",d");
@@ -36,7 +28,7 @@ export function* D3CirclePackingChart(this: any) {
     // Create the pack layout
     const pack = d3
       .pack<NodeData>()
-      .size([width - margin * 2, height - margin * 2])
+      .size([chartWidth - margin * 2, chartHeight - margin * 2])
       .padding(3);
 
     // Compute the hierarchy from the JSON data
@@ -48,16 +40,16 @@ export function* D3CirclePackingChart(this: any) {
     );
 
     // Create the SVG container
-    svg = d3
+    const svg = d3
       .create("svg")
-      .attr("width", width)
-      .attr("height", height)
-      .attr("viewBox", [-margin, -margin, width, height])
+      .attr("width", chartWidth)
+      .attr("height", chartHeight)
+      .attr("viewBox", [-margin, -margin, chartWidth, chartHeight])
       .attr("style", "width: 100%; height: auto; font: 10px sans-serif;")
       .attr("text-anchor", "middle");
 
     // Place each node according to the layout's x and y values
-    const node = svg!
+    const node = svg
       .append("g")
       .selectAll()
       .data(root.descendants())
@@ -116,88 +108,98 @@ export function* D3CirclePackingChart(this: any) {
 
   // Initial render
   yield (
-    <div class="w-full h-full flex items-center justify-center">
+    <div
+      ref={(el: HTMLDivElement | null) => {
+        if (el && !chartMounted) {
+          el.innerHTML = "";
+          const chartSvg = createChart();
+          el.appendChild(chartSvg.node()!);
+          chartMounted = true;
+        }
+      }}
+      class="w-full h-full flex items-center justify-center"
+    />
+  );
+
+  // Keep the component alive
+  for (const _ of this) {
+    yield (
       <div
         ref={(el: HTMLDivElement | null) => {
           if (el && !chartMounted) {
-            console.log("Ref callback called, mounting chart...");
-            // Use setTimeout to ensure container has proper dimensions
-            setTimeout(() => {
-              if (!chartMounted) {
-                el.innerHTML = "";
-                const chartSvg = createChart(el);
-                if (chartSvg) {
-                  el.appendChild(chartSvg.node()!);
-                  console.log("Chart mounted successfully");
-                } else {
-                  console.log("Failed to create chart");
-                }
-                chartMounted = true;
-              }
-            }, 0);
+            el.innerHTML = "";
+            const chartSvg = createChart();
+            el.appendChild(chartSvg.node()!);
+            chartMounted = true;
+          }
+        }}
+        class="w-full h-full flex items-center justify-center"
+      />
+    );
+  }
+}
 
-            // Set up resize observer for responsive behavior
-            resizeObserver = new ResizeObserver((entries) => {
-              for (const entry of entries) {
-                const container = entry.target as HTMLDivElement;
-                // Recreate chart with new dimensions
-                container.innerHTML = "";
-                const newChartSvg = createChart(container);
-                if (newChartSvg) {
-                  container.appendChild(newChartSvg.node()!);
-                }
-              }
+// Outer component that determines dimensions and passes them to inner component
+export function* D3CirclePackingChart(this: any) {
+  let containerRef: HTMLDivElement | null = null;
+  let dimensions = { width: 400, height: 400 }; // fallback dimensions
+  let resizeObserver: ResizeObserver | null = null;
+
+  // Function to update dimensions
+  const updateDimensions = () => {
+    if (containerRef) {
+      const rect = containerRef.getBoundingClientRect();
+      const size = Math.min(rect.width, rect.height) || 400;
+      dimensions = { width: size, height: size };
+    }
+  };
+
+  // Initial render
+  yield (
+    <div class="w-full h-full flex items-center justify-center">
+      <div
+        ref={(el: HTMLDivElement | null) => {
+          if (el) {
+            containerRef = el;
+            updateDimensions();
+
+            // Set up resize observer
+            resizeObserver = new ResizeObserver(() => {
+              updateDimensions();
             });
             resizeObserver.observe(el);
           }
         }}
-        class="w-full max-w-4xl h-auto"
-        style="display: flex; justify-content: center; align-items: center;"
-      />
+        class="size-full max-w-4xl"
+      >
+        <D3ChartInner width={dimensions.width} height={dimensions.height} />
+      </div>
     </div>
   );
 
-  // Keep the component alive and re-render if needed
+  // Keep the component alive and re-render when dimensions change
   for (const _ of this) {
     yield (
       <div class="w-full h-full flex items-center justify-center">
         <div
           ref={(el: HTMLDivElement | null) => {
-            if (el && !chartMounted) {
-              console.log("Ref callback called (second), mounting chart...");
-              // Use setTimeout to ensure container has proper dimensions
-              setTimeout(() => {
-                if (!chartMounted) {
-                  el.innerHTML = "";
-                  const chartSvg = createChart(el);
-                  if (chartSvg) {
-                    el.appendChild(chartSvg.node()!);
-                    console.log("Chart mounted successfully (second)");
-                  } else {
-                    console.log("Failed to create chart (second)");
-                  }
-                  chartMounted = true;
-                }
-              }, 0);
+            if (el) {
+              containerRef = el;
+              updateDimensions();
 
-              // Set up resize observer for responsive behavior
-              resizeObserver = new ResizeObserver((entries) => {
-                for (const entry of entries) {
-                  const container = entry.target as HTMLDivElement;
-                  // Recreate chart with new dimensions
-                  container.innerHTML = "";
-                  const newChartSvg = createChart(container);
-                  if (newChartSvg) {
-                    container.appendChild(newChartSvg.node()!);
-                  }
-                }
-              });
-              resizeObserver.observe(el);
+              // Set up resize observer
+              if (!resizeObserver) {
+                resizeObserver = new ResizeObserver(() => {
+                  updateDimensions();
+                });
+                resizeObserver.observe(el);
+              }
             }
           }}
-          class="w-full max-w-4xl h-auto"
-          style="display: flex; justify-content: center; align-items: center;"
-        />
+          class="size-full max-w-4xl"
+        >
+          <D3ChartInner width={dimensions.width} height={dimensions.height} />
+        </div>
       </div>
     );
   }
