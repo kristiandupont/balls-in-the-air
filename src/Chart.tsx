@@ -1,5 +1,6 @@
 import * as d3 from "d3";
 import { data } from "./data";
+import type { Context } from "@b9g/crank";
 
 // Define the data structure type
 export interface NodeData {
@@ -10,7 +11,7 @@ export interface NodeData {
 
 // Inner component that creates the actual D3 chart
 function* D3ChartInner(
-  this: any,
+  this: Context,
   { width, height }: { width: number; height: number }
 ) {
   let chartMounted = false;
@@ -106,22 +107,6 @@ function* D3ChartInner(
     return svg;
   };
 
-  // Initial render
-  yield (
-    <div
-      ref={(el: HTMLDivElement | null) => {
-        if (el && !chartMounted) {
-          el.innerHTML = "";
-          const chartSvg = createChart();
-          el.appendChild(chartSvg.node()!);
-          chartMounted = true;
-        }
-      }}
-      class="w-full h-full flex items-center justify-center"
-    />
-  );
-
-  // Keep the component alive
   for (const _ of this) {
     yield (
       <div
@@ -140,7 +125,7 @@ function* D3ChartInner(
 }
 
 // Outer component that determines dimensions and passes them to inner component
-export function* D3CirclePackingChart(this: any) {
+export function* D3CirclePackingChart(this: Context) {
   let containerRef: HTMLDivElement | null = null;
   let dimensions = { width: 400, height: 400 }; // fallback dimensions
   let resizeObserver: ResizeObserver | null = null;
@@ -154,30 +139,6 @@ export function* D3CirclePackingChart(this: any) {
     }
   };
 
-  // Initial render
-  yield (
-    <div class="w-full h-full flex items-center justify-center">
-      <div
-        ref={(el: HTMLDivElement | null) => {
-          if (el) {
-            containerRef = el;
-            updateDimensions();
-
-            // Set up resize observer
-            resizeObserver = new ResizeObserver(() => {
-              updateDimensions();
-            });
-            resizeObserver.observe(el);
-          }
-        }}
-        class="size-full max-w-4xl"
-      >
-        <D3ChartInner width={dimensions.width} height={dimensions.height} />
-      </div>
-    </div>
-  );
-
-  // Keep the component alive and re-render when dimensions change
   for (const _ of this) {
     yield (
       <div class="w-full h-full flex items-center justify-center">
