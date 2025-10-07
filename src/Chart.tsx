@@ -17,8 +17,8 @@ function* D3ChartInner(
   let chartMounted = false;
   let selectedNode: d3.HierarchyCircularNode<NodeData> | null = null;
   let hoveredNode: d3.HierarchyCircularNode<NodeData> | null = null;
-  // Smooth zoom state
-  let currentViewBox: [number, number, number, number] | null = null;
+  // Smooth zoom state (transform-based)
+  let view: [number, number, number] | null = null; // [x, y, k]
   let currentFocus: d3.HierarchyCircularNode<NodeData> | null = null;
   let zoomToRoot: (() => void) | null = null;
 
@@ -56,9 +56,11 @@ function* D3ChartInner(
       .attr("style", "width: 100%; height: auto; font: 10px sans-serif;")
       .attr("text-anchor", "middle");
 
+    // Container used for zooming (scale/translate)
+    const zoomLayer = svg.append("g");
+
     // Place each node according to the layout's x and y values
-    const node = svg
-      .append("g")
+    const node = zoomLayer
       .selectAll()
       .data(root.descendants())
       .join("g")
@@ -143,13 +145,8 @@ function* D3ChartInner(
           });
       });
 
-    // Initialize viewBox tracking (used for smooth zoom)
-    currentViewBox = currentViewBox ?? [
-      -margin,
-      -margin,
-      chartWidth,
-      chartHeight,
-    ];
+    // Initialize transform-based zoom state
+    view = view ?? [chartWidth / 2, chartHeight / 2, 1];
 
     const isDescendantOf = (
       descendant: d3.HierarchyCircularNode<NodeData>,
@@ -160,16 +157,15 @@ function* D3ChartInner(
     };
 
     const zoomTo = (target: d3.HierarchyCircularNode<NodeData>) => {
-      if (!currentViewBox) return;
+      if (!view) view = [chartWidth / 2, chartHeight / 2, 1];
 
-      const targetViewBox: [number, number, number, number] = [
-        target.x - target.r - margin,
-        target.y - target.r - margin,
-        target.r * 2 + margin * 2,
-        target.r * 2 + margin * 2,
-      ];
+      // Target scale so that target circle fits viewport
+      const kTarget =
+        Math.min(chartWidth, chartHeight) / (target.r * 2 + margin * 2);
+      const xTarget = target.x;
+      const yTarget = target.y;
 
-      const interp = d3.interpolate(currentViewBox, targetViewBox);
+      const interp = d3.interpolate(view, [xTarget, yTarget, kTarget]);
 
       // Fade non-descendants, enable descendants
       node
@@ -181,16 +177,30 @@ function* D3ChartInner(
           isDescendantOf(d, target) ? "auto" : "none"
         );
 
-      svg
+      const t = svg
         .interrupt()
         .transition()
         .duration(700)
-        .ease(d3.easeCubicInOut)
-        .attrTween("viewBox", () => (t) => interp(t).join(" "))
-        .on("end", () => {
-          currentViewBox = targetViewBox;
-          currentFocus = target;
-        });
+        .ease(d3.easeCubicInOut);
+
+      t.tween("zoom", () => {
+        return (tt: number) => {
+          const [xv, yv, kv] = interp(tt);
+          const transform = `translate(${chartWidth / 2},${
+            chartHeight / 2
+          }) scale(${kv}) translate(${-xv},${-yv})`;
+          zoomLayer.attr("transform", transform);
+          // Counter-scale text to keep readable size
+          zoomLayer.selectAll("text").style("font-size", `${10 / kv}px`);
+          // Keep strokes constant
+          zoomLayer
+            .selectAll("circle")
+            .attr("vector-effect", "non-scaling-stroke");
+        };
+      }).on("end", () => {
+        view = [xTarget, yTarget, kTarget];
+        currentFocus = target;
+      });
     };
 
     // Attach double-click zoom
@@ -209,14 +219,19 @@ function* D3ChartInner(
       }
     };
 
-    // Apply initial viewBox
-    svg.attr("viewBox", currentViewBox.join(" "));
+    // Apply initial transform
+    const [x0, y0, k0] = view;
+    const initialTransform = `translate(${chartWidth / 2},${
+      chartHeight / 2
+    }) scale(${k0}) translate(${-x0},${-y0})`;
+    zoomLayer.attr("transform", initialTransform);
 
     // Add a label to leaf nodes
     const text = node
       .filter((d) => !d.children && d.r > 10)
       .append("text")
-      .attr("clip-path", (d) => `circle(${d.r})`);
+      .attr("clip-path", (d) => `circle(${d.r})`)
+      .style("pointer-events", "none");
 
     // Add a tspan for each CamelCase-separated word
     text
