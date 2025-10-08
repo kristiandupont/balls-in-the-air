@@ -196,6 +196,8 @@ function* D3ChartInner(
           zoomLayer
             .selectAll("circle")
             .attr("vector-effect", "non-scaling-stroke");
+          // Update visibility based on zoom level
+          updateLabelVisibility(kv);
         };
       }).on("end", () => {
         view = [xTarget, yTarget, kTarget];
@@ -219,16 +221,8 @@ function* D3ChartInner(
       }
     };
 
-    // Apply initial transform
-    const [x0, y0, k0] = view;
-    const initialTransform = `translate(${chartWidth / 2},${
-      chartHeight / 2
-    }) scale(${k0}) translate(${-x0},${-y0})`;
-    zoomLayer.attr("transform", initialTransform);
-
-    // Add a label to leaf nodes
+    // Add labels to all nodes; we'll control visibility based on zoom/size
     const text = node
-      .filter((d) => !d.children && d.r > 10)
       .append("text")
       .attr("clip-path", (d) => `circle(${d.r})`)
       .style("pointer-events", "none");
@@ -256,6 +250,20 @@ function* D3ChartInner(
       )
       .attr("fill-opacity", 0.7)
       .text((d) => format(d.value || 0));
+
+    // Helper: show labels only when on-screen radius exceeds threshold
+    const updateLabelVisibility = (k: number) => {
+      const minPixelRadius = 10; // threshold similar to original r>10 logic
+      text.style("display", (d) => (d.r * k > minPixelRadius ? null : "none"));
+    };
+
+    // Apply initial transform
+    const [x0, y0, k0] = view;
+    const initialTransform = `translate(${chartWidth / 2},${
+      chartHeight / 2
+    }) scale(${k0}) translate(${-x0},${-y0})`;
+    zoomLayer.attr("transform", initialTransform);
+    updateLabelVisibility(k0);
 
     return svg;
   };
