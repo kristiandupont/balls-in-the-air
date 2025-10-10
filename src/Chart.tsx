@@ -1,5 +1,5 @@
 import * as d3 from "d3";
-import { data } from "./data";
+import { loadTreeData, saveTreeData } from "./storage";
 import type { Context } from "@b9g/crank";
 
 // Define the data structure type
@@ -22,6 +22,123 @@ function* D3ChartInner(
   let currentFocus: d3.HierarchyCircularNode<NodeData> | null = null;
   let zoomToRoot: (() => void) | null = null;
 
+  // Tree data state
+  let treeData: NodeData = loadTreeData();
+  let menuPosition: { x: number; y: number } | null = null;
+  let isEditingName = false;
+  let editingNode: d3.HierarchyCircularNode<NodeData> | null = null;
+  let selectedNodePath: string[] | null = null;
+
+  // Store refresh function for use in event handlers
+  const refresh = () => this.refresh();
+
+  // Data manipulation functions
+  const addChildNode = () => {
+    if (!selectedNodePath) return;
+
+    const newNode: NodeData = { name: "New Node", value: 0.1, children: [] };
+
+    // Find the parent in the tree data and add the new child
+    const addToTree = (node: NodeData, targetPath: string[]): boolean => {
+      if (targetPath.length === 1 && node.name === targetPath[0]) {
+        // We found the target node, add the child here
+        if (!node.children) node.children = [];
+        node.children.push(newNode);
+        return true;
+      }
+
+      if (node.children) {
+        for (const child of node.children) {
+          if (addToTree(child, targetPath.slice(1))) {
+            return true;
+          }
+        }
+      }
+      return false;
+    };
+
+    if (addToTree(treeData, selectedNodePath)) {
+      saveTreeData(treeData);
+      refresh();
+    }
+  };
+
+  const renameNode = (
+    node: d3.HierarchyCircularNode<NodeData>,
+    newName: string
+  ) => {
+    if (node === currentFocus) return; // Don't rename root
+
+    const renameInTree = (
+      treeNode: NodeData,
+      targetPath: string[]
+    ): boolean => {
+      if (targetPath.length === 1) {
+        treeNode.name = newName;
+        return true;
+      }
+
+      if (treeNode.children) {
+        for (const child of treeNode.children) {
+          if (renameInTree(child, targetPath.slice(1))) {
+            return true;
+          }
+        }
+      }
+      return false;
+    };
+
+    const path = node
+      .ancestors()
+      .map((d) => d.data.name)
+      .reverse();
+    if (renameInTree(treeData, path)) {
+      saveTreeData(treeData);
+      refresh();
+    }
+  };
+
+  const deleteNode = (node: d3.HierarchyCircularNode<NodeData>) => {
+    if (node === currentFocus) return; // Don't delete root
+
+    const deleteFromTree = (
+      treeNode: NodeData,
+      targetPath: string[]
+    ): boolean => {
+      if (targetPath.length === 2 && treeNode.children) {
+        const targetName = targetPath[1];
+        const index = treeNode.children.findIndex(
+          (child) => child.name === targetName
+        );
+        if (index !== -1) {
+          treeNode.children.splice(index, 1);
+          return true;
+        }
+      }
+
+      if (treeNode.children) {
+        for (const child of treeNode.children) {
+          if (deleteFromTree(child, targetPath.slice(1))) {
+            return true;
+          }
+        }
+      }
+      return false;
+    };
+
+    const path = node
+      .ancestors()
+      .map((d) => d.data.name)
+      .reverse();
+    if (deleteFromTree(treeData, path)) {
+      saveTreeData(treeData);
+      selectedNode = null;
+      menuPosition = null;
+      selectedNodePath = null;
+      refresh();
+    }
+  };
+
   // Function to create the chart
   const createChart = () => {
     const margin = 1; // to avoid clipping the root circle stroke
@@ -38,9 +155,9 @@ function* D3ChartInner(
       .size([chartWidth - margin * 2, chartHeight - margin * 2])
       .padding(3);
 
-    // Compute the hierarchy from the JSON data
+    // Compute the hierarchy from the tree data
     const hierarchyRoot = d3
-      .hierarchy(data)
+      .hierarchy(treeData)
       .sum((d) => d.value || 0)
       .sort((a, b) => (b.value || 0) - (a.value || 0));
 
@@ -125,6 +242,23 @@ function* D3ChartInner(
         event.stopPropagation();
         selectedNode = selectedNode === d ? null : d;
 
+        // Calculate menu position and store node path
+        if (selectedNode) {
+          const rect = this.getBoundingClientRect();
+          const svgRect = svg.node()!.getBoundingClientRect();
+          menuPosition = {
+            x: d.x + svgRect.left - rect.left,
+            y: d.y + svgRect.top - rect.top,
+          };
+          selectedNodePath = d
+            .ancestors()
+            .map((ancestor) => ancestor.data.name)
+            .reverse();
+        } else {
+          menuPosition = null;
+          selectedNodePath = null;
+        }
+
         // Update all circles to reflect new selection state
         circles
           .transition()
@@ -143,6 +277,9 @@ function* D3ChartInner(
             if (selectedNode === nodeData || hoveredNode === nodeData) return 3;
             return 1;
           });
+
+        // Trigger refresh through the context
+        setTimeout(refresh, 0);
       });
 
     // Initialize transform-based zoom state
@@ -278,28 +415,126 @@ function* D3ChartInner(
     return svg;
   };
 
-  // Keyboard handler for Escape to reset zoom
+  // Keyboard handler for Escape to reset zoom and close menu
   const handleKeyDown = (e: KeyboardEvent) => {
     if (e.key === "Escape") {
-      if (zoomToRoot) zoomToRoot();
+      if (isEditingName) {
+        isEditingName = false;
+        editingNode = null;
+        refresh();
+      } else if (selectedNode) {
+        selectedNode = null;
+        menuPosition = null;
+        selectedNodePath = null;
+        refresh();
+      } else if (zoomToRoot) {
+        zoomToRoot();
+      }
     }
   };
 
   for (const _ of this) {
     yield (
-      <div
-        data-chart-host="circle-pack"
-        ref={(el: HTMLDivElement | null) => {
-          if (el && !chartMounted) {
-            el.innerHTML = "";
-            const chartSvg = createChart();
-            el.appendChild(chartSvg.node()!);
-            chartMounted = true;
-            window.addEventListener("keydown", handleKeyDown);
-          }
-        }}
-        class="w-full h-full flex items-center justify-center"
-      />
+      <div class="w-full h-full flex items-center justify-center relative">
+        <div
+          data-chart-host="circle-pack"
+          ref={(el: HTMLDivElement | null) => {
+            if (el && !chartMounted) {
+              el.innerHTML = "";
+              const chartSvg = createChart();
+              el.appendChild(chartSvg.node()!);
+              chartMounted = true;
+              window.addEventListener("keydown", handleKeyDown);
+            }
+          }}
+          class="w-full h-full flex items-center justify-center"
+        />
+
+        {/* Floating Action Menu */}
+        {selectedNode && menuPosition && !isEditingName && (
+          <div
+            class="absolute bg-white rounded-lg shadow-lg border border-gray-200 p-2 z-10"
+            style={`left: ${
+              (menuPosition as { x: number; y: number }).x + 20
+            }px; top: ${(menuPosition as { x: number; y: number }).y - 20}px;`}
+          >
+            <div class="flex flex-col gap-1">
+              <button
+                class="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                onclick={() => {
+                  addChildNode();
+                  selectedNode = null;
+                  menuPosition = null;
+                  selectedNodePath = null;
+                }}
+              >
+                Add Child
+              </button>
+              {selectedNode !== currentFocus && (
+                <>
+                  <button
+                    class="px-3 py-1 text-sm bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
+                    onclick={() => {
+                      isEditingName = true;
+                      editingNode = selectedNode;
+                    }}
+                  >
+                    Rename
+                  </button>
+                  <button
+                    class="px-3 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+                    onclick={() => deleteNode(selectedNode!)}
+                  >
+                    Delete
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Inline Name Editor */}
+        {isEditingName && editingNode && menuPosition && (
+          <div
+            class="absolute bg-white rounded-lg shadow-lg border border-gray-200 p-2 z-10"
+            style={`left: ${
+              (menuPosition as { x: number; y: number }).x
+            }px; top: ${(menuPosition as { x: number; y: number }).y + 20}px;`}
+          >
+            <input
+              type="text"
+              value={
+                (editingNode as d3.HierarchyCircularNode<NodeData>).data.name
+              }
+              class="px-2 py-1 border border-gray-300 rounded text-sm"
+              onkeydown={(e: KeyboardEvent) => {
+                if (e.key === "Enter") {
+                  const target = e.target as HTMLInputElement;
+                  renameNode(
+                    editingNode as d3.HierarchyCircularNode<NodeData>,
+                    target.value
+                  );
+                  isEditingName = false;
+                  editingNode = null;
+                } else if (e.key === "Escape") {
+                  isEditingName = false;
+                  editingNode = null;
+                }
+              }}
+              onblur={(e: FocusEvent) => {
+                const target = e.target as HTMLInputElement;
+                renameNode(
+                  editingNode as d3.HierarchyCircularNode<NodeData>,
+                  target.value
+                );
+                isEditingName = false;
+                editingNode = null;
+              }}
+              autofocus
+            />
+          </div>
+        )}
+      </div>
     );
   }
 }
