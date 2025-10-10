@@ -208,10 +208,20 @@ function* D3ChartInner(
     // Attach double-click zoom
     circles.on("dblclick", function (event, d) {
       event.stopPropagation();
-      if (!d.children || d.children.length === 0) return;
+      // Allow zooming into any node (including leaf nodes)
       selectedNode = null;
       hoveredNode = null;
       zoomTo(d);
+    });
+
+    // Add click-outside-to-zoom-out functionality
+    svg.on("click", function () {
+      // Only zoom out if we're not at the root level and click wasn't on a circle
+      if (currentFocus && currentFocus !== root && currentFocus.parent) {
+        selectedNode = null;
+        hoveredNode = null;
+        zoomTo(currentFocus.parent);
+      }
     });
 
     // Expose a way to zoom back to root for Escape key handler
