@@ -14,7 +14,6 @@ function* D3ChartInner(
   this: Context,
   { width, height }: { width: number; height: number }
 ) {
-  let chartMounted = false;
   let selectedNode: d3.HierarchyCircularNode<NodeData> | null = null;
   let hoveredNode: d3.HierarchyCircularNode<NodeData> | null = null;
   // Smooth zoom state (transform-based)
@@ -28,22 +27,41 @@ function* D3ChartInner(
   let isEditingName = false;
   let editingNode: d3.HierarchyCircularNode<NodeData> | null = null;
   let selectedNodePath: string[] | null = null;
+  let chartKey = 0; // Key to force chart recreation
 
   // Store refresh function for use in event handlers
-  const refresh = () => this.refresh();
+  const refresh = () => {
+    console.log("Refreshing component, chartKey will be:", chartKey);
+    this.refresh();
+  };
 
   // Data manipulation functions
   const addChildNode = () => {
     if (!selectedNodePath) return;
 
-    const newNode: NodeData = { name: "New Node", value: 0.1, children: [] };
+    console.log("Adding child node to path:", selectedNodePath);
 
     // Find the parent in the tree data and add the new child
     const addToTree = (node: NodeData, targetPath: string[]): boolean => {
       if (targetPath.length === 1 && node.name === targetPath[0]) {
         // We found the target node, add the child here
         if (!node.children) node.children = [];
+        // Create new node with value that's 1/10th of parent's value
+        const parentValue = node.value || 1;
+        const newNode: NodeData = {
+          name: "New Node",
+          value: parentValue / 10,
+          children: [],
+        };
         node.children.push(newNode);
+        console.log(
+          "Added child to node:",
+          node.name,
+          "with value:",
+          newNode.value,
+          "children count:",
+          node.children.length
+        );
         return true;
       }
 
@@ -58,8 +76,13 @@ function* D3ChartInner(
     };
 
     if (addToTree(treeData, selectedNodePath)) {
+      console.log("Saving tree data and refreshing...");
       saveTreeData(treeData);
+      // Increment chart key to force recreation
+      chartKey++;
       refresh();
+    } else {
+      console.log("Failed to add child to tree");
     }
   };
 
@@ -94,6 +117,8 @@ function* D3ChartInner(
       .reverse();
     if (renameInTree(treeData, path)) {
       saveTreeData(treeData);
+      // Increment chart key to force recreation
+      chartKey++;
       refresh();
     }
   };
@@ -135,6 +160,8 @@ function* D3ChartInner(
       selectedNode = null;
       menuPosition = null;
       selectedNodePath = null;
+      // Increment chart key to force recreation
+      chartKey++;
       refresh();
     }
   };
@@ -437,13 +464,17 @@ function* D3ChartInner(
     yield (
       <div class="w-full h-full flex items-center justify-center relative">
         <div
+          key={chartKey}
           data-chart-host="circle-pack"
           ref={(el: HTMLDivElement | null) => {
-            if (el && !chartMounted) {
+            if (el) {
+              console.log("Creating chart, chartKey:", chartKey);
               el.innerHTML = "";
+              // Reload tree data in case it was updated
+              treeData = loadTreeData();
+              console.log("Loaded tree data:", treeData);
               const chartSvg = createChart();
               el.appendChild(chartSvg.node()!);
-              chartMounted = true;
               window.addEventListener("keydown", handleKeyDown);
             }
           }}
