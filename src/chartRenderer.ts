@@ -174,9 +174,11 @@ export const createChartRenderer = (
   const circles = ballGroups
     .append("circle")
     .attr("r", (d) => calculateRadius(d))
-    .attr("fill", (d) => getBallColors(d).fill)
+    // .attr("fill", (d) => `url(#gradient-${d.id})`)
+    .attr("fill", "white")
     .attr("stroke", (d) => getBallColors(d).stroke)
-    .attr("stroke-width", 2);
+    .attr("stroke-width", 4)
+    .style("filter", "drop-shadow(0 0 5px rgba(0, 0, 0, 0.5))");
 
   // Add labels
   const labels = ballGroups
@@ -210,9 +212,8 @@ export const createChartRenderer = (
       .selectAll<SVGCircleElement, Ball>("g.ball circle")
       .transition()
       .duration(200)
-      .attr("fill", (d) => getBallColors(d, d === selectedBall).fill)
       .attr("stroke", (d) => getBallColors(d, d === selectedBall).stroke)
-      .attr("stroke-width", (d) => (d === selectedBall ? 4 : 2));
+      .attr("stroke-width", (d) => (d === selectedBall ? 6 : 4));
 
     svg
       .selectAll<SVGTextElement, Ball>("g.ball text")
@@ -282,18 +283,18 @@ export const createChartRenderer = (
         enter
           .append("circle")
           .attr("r", (d) => calculateRadius(d))
-          .attr("fill", (d) => getBallColors(d, d === selectedBall).fill)
+          .attr("fill", (d) => `url(#gradient-${d.id})`)
           .attr("stroke", (d) => getBallColors(d, d === selectedBall).stroke)
-          .attr("stroke-width", (d) => (d === selectedBall ? 4 : 2)),
-      (update) =>
-        update
+          .attr("stroke-width", (d) => (d === selectedBall ? 6 : 4)),
+      (update) => {
+        return update
           .transition()
           .duration(300)
           .ease(d3.easeBackOut)
           .attr("r", (d) => calculateRadius(d))
-          .attr("fill", (d) => getBallColors(d, d === selectedBall).fill)
           .attr("stroke", (d) => getBallColors(d, d === selectedBall).stroke)
-          .attr("stroke-width", (d) => (d === selectedBall ? 4 : 2))
+          .attr("stroke-width", (d) => (d === selectedBall ? 6 : 4));
+      }
     );
 
     // Update text
