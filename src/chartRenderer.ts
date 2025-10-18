@@ -13,16 +13,16 @@ function renderMultiLineText(
   textSelection: d3.Selection<SVGTextElement, Ball, any, any>,
   ball: Ball
 ) {
-  const lines = ball.name.split('\n');
+  const lines = ball.name.split("\n");
   const lineHeight = 1.2;
-  const startY = -(lines.length - 1) * lineHeight / 2;
+  const startY = (-(lines.length - 1) * lineHeight) / 2;
 
   textSelection
-    .selectAll('tspan')
+    .selectAll("tspan")
     .data(lines)
-    .join('tspan')
-    .attr('x', 0)
-    .attr('y', (_, i) => `${startY + i * lineHeight}em`)
+    .join("tspan")
+    .attr("x", 0)
+    .attr("y", (_, i) => `${startY + i * lineHeight}em`)
     .text((line) => line);
 }
 
@@ -43,8 +43,7 @@ export const createChartRenderer = (
     .attr("width", chartWidth)
     .attr("height", chartHeight)
     .attr("viewBox", [0, 0, chartWidth, chartHeight])
-    .attr("style", "width: 100%; height: auto; font: 14px sans-serif;")
-    .style("background", "#f9fafb");
+    .attr("style", "width: 100%; height: auto; font: 14px sans-serif;");
 
   // Initialize ball positions if not set
   balls.forEach((ball) => {
@@ -268,11 +267,14 @@ export const createChartRenderer = (
       .call(drag);
 
     // Update clip path radii (no transition needed, should update immediately)
-    updatedGroups.selectAll<SVGCircleElement, Ball>("clipPath circle")
+    updatedGroups
+      .selectAll<SVGCircleElement, Ball>("clipPath circle")
       .attr("r", (d) => calculateRadius(d));
 
     // Update circles with smooth transition
-    const circles = updatedGroups.selectAll<SVGCircleElement, Ball>("circle:not(clipPath circle)");
+    const circles = updatedGroups.selectAll<SVGCircleElement, Ball>(
+      "circle:not(clipPath circle)"
+    );
     const circlesData = circles.data((d) => [d]);
 
     circlesData.join(

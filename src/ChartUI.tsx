@@ -31,23 +31,19 @@ export function* Sidebar(
     growthRateInput = selectedBall?.growthRate.toString() || "2";
 
     yield (
-      <div class="w-80 bg-white border-l border-gray-200 p-6 flex flex-col gap-4 overflow-y-auto">
-        <div class="flex items-center justify-between">
-          <h2 class="text-xl font-bold text-gray-800">
-            {selectedBall ? "Edit Ball" : "Balls in the Air"}
-          </h2>
-          {selectedBall && (
-            <button
-              class="text-gray-500 hover:text-gray-700"
-              onclick={onClose}
-            >
-              ✕
-            </button>
-          )}
-        </div>
-
+      <>
         {selectedBall ? (
-          <>
+          <div class="fixed right-6 top-6 w-80 bg-white rounded-lg shadow-2xl p-6 flex flex-col gap-4 max-h-[calc(100vh-3rem)] overflow-y-auto z-50">
+            <div class="flex items-center justify-between">
+              <h2 class="text-xl font-bold text-gray-800">Edit Ball</h2>
+              <button
+                class="text-gray-500 hover:text-gray-700"
+                onclick={onClose}
+              >
+                ✕
+              </button>
+            </div>
+
             <div class="flex flex-col gap-2">
               <label class="text-sm font-medium text-gray-700">Name</label>
               <textarea
@@ -165,21 +161,17 @@ export function* Sidebar(
             >
               Delete Ball
             </button>
-          </>
-        ) : (
-          <>
-            <p class="text-gray-600">
-              Click a ball to edit it, or add a new one.
-            </p>
-            <button
-              class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium"
-              onclick={onAdd}
-            >
-              + Add New Ball
-            </button>
-          </>
-        )}
-      </div>
+          </div>
+        ) : null}
+
+        <button
+          class="fixed left-6 bottom-6 w-16 h-16 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors shadow-lg flex items-center justify-center text-4xl leading-none z-50"
+          onclick={onAdd}
+          title="Add New Ball"
+        >
+          +
+        </button>
+      </>
     );
   }
 }

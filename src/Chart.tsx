@@ -119,8 +119,16 @@ function* D3ChartInner(
 
   for ({ width, height } of this) {
     yield (
-      <div class="w-full h-full flex">
-        <div class="flex-1 relative">
+      <>
+        <div class="w-full h-full relative">
+          {/* Title in background */}
+          <div class="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-0">
+            <h1 class="text-9xl font-bold text-gray-100">
+              Balls in the Air
+            </h1>
+          </div>
+
+          {/* Chart */}
           <div
             key={chartKey}
             ref={(el: HTMLDivElement | null) => {
@@ -141,10 +149,11 @@ function* D3ChartInner(
                 el.appendChild(chartRenderer.svg.node()!);
               }
             }}
-            class="w-full h-full"
+            class="w-full h-full relative z-10"
           />
         </div>
 
+        {/* Floating UI elements */}
         <Sidebar
           selectedBall={getSelectedBall()}
           onBump={handleBump}
@@ -153,7 +162,7 @@ function* D3ChartInner(
           onAdd={handleAdd}
           onClose={handleClose}
         />
-      </div>
+      </>
     );
   }
 }
@@ -167,9 +176,8 @@ export function* BallsChart(this: Context) {
   const updateDimensions = () => {
     if (containerRef) {
       const rect = containerRef.getBoundingClientRect();
-      // Reserve space for sidebar (320px)
       dimensions = {
-        width: Math.max(rect.width - 320, 400),
+        width: rect.width || 800,
         height: rect.height || 600,
       };
     }
