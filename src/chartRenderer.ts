@@ -1,6 +1,6 @@
 import * as d3 from "d3";
 import type { Ball } from "./storage";
-import { calculateRadius, getBallColors } from "./storage";
+import { calculateRadius, getBallColors, calculateTextSize } from "./storage";
 
 export interface ChartRenderer {
   svg: d3.Selection<SVGSVGElement, unknown, null, undefined>;
@@ -156,6 +156,13 @@ export const createChartRenderer = (
     .style("cursor", "grab")
     .call(drag);
 
+  // Add clip paths for each ball
+  ballGroups
+    .append("clipPath")
+    .attr("id", (d) => `clip-${d.id}`)
+    .append("circle")
+    .attr("r", (d) => calculateRadius(d));
+
   // Add circles
   const circles = ballGroups
     .append("circle")
@@ -168,12 +175,25 @@ export const createChartRenderer = (
   const labels = ballGroups
     .append("text")
     .attr("text-anchor", "middle")
-    .attr("dy", "0.3em")
+    .attr("dominant-baseline", "central")
+    .attr("clip-path", (d) => `url(#clip-${d.id})`)
     .style("pointer-events", "none")
     .style("fill", (d) => getBallColors(d).text)
     .style("font-weight", "600")
-    .style("font-size", (d) => `${Math.max(10, calculateRadius(d) * 0.3)}px`)
-    .text((d) => d.name);
+    .style("font-size", (d) => `${calculateTextSize(d)}px`)
+    .each(function (d) {
+      const lines = d.name.split('\n');
+      const lineHeight = 1.2;
+      const startY = -(lines.length - 1) * lineHeight / 2;
+
+      d3.select(this)
+        .selectAll('tspan')
+        .data(lines)
+        .join('tspan')
+        .attr('x', 0)
+        .attr('y', (_, i) => `${startY + i * lineHeight}em`)
+        .text((line) => line);
+    });
 
   function tick() {
     svg
@@ -230,19 +250,35 @@ export const createChartRenderer = (
       .selectAll<SVGGElement, Ball>("g.ball")
       .data(newBalls, (d) => d.id)
       .join(
-        (enter) =>
-          enter
+        (enter) => {
+          const g = enter
             .append("g")
             .attr("class", "ball")
-            .attr("transform", (d) => `translate(${d.x},${d.y})`),
+            .attr("transform", (d) => `translate(${d.x},${d.y})`);
+
+          // Add clip path for new balls
+          g.append("clipPath")
+            .attr("id", (d) => `clip-${d.id}`)
+            .append("circle")
+            .attr("r", (d) => calculateRadius(d));
+
+          return g;
+        },
         (update) => update,
         (exit) => exit.remove()
       )
       .style("cursor", "grab")
       .call(drag);
 
+    // Update clip path radii
+    updatedGroups.selectAll<SVGCircleElement, Ball>("clipPath circle")
+      .transition()
+      .duration(300)
+      .ease(d3.easeBackOut)
+      .attr("r", (d) => calculateRadius(d));
+
     // Update circles with smooth transition
-    const circles = updatedGroups.selectAll<SVGCircleElement, Ball>("circle");
+    const circles = updatedGroups.selectAll<SVGCircleElement, Ball>("circle:not(clipPath circle)");
     const circlesData = circles.data((d) => [d]);
 
     circlesData.join(
@@ -273,29 +309,44 @@ export const createChartRenderer = (
         enter
           .append("text")
           .attr("text-anchor", "middle")
-          .attr("dy", "0.3em")
+          .attr("dominant-baseline", "central")
+          .attr("clip-path", (d) => `url(#clip-${d.id})`)
           .style("pointer-events", "none")
           .style("fill", (d) => getBallColors(d, d === selectedBall).text)
           .style("font-weight", "600")
-          .style(
-            "font-size",
-            (d) => `${Math.max(5, calculateRadius(d) * 0.2)}px`
-          )
-          .text((d) => d.name),
+          .style("font-size", (d) => `${calculateTextSize(d)}px`)
+          .each(function (d) {
+            const lines = d.name.split('\n');
+            const lineHeight = 1.2;
+            const startY = -(lines.length - 1) * lineHeight / 2;
+
+            d3.select(this)
+              .selectAll('tspan')
+              .data(lines)
+              .join('tspan')
+              .attr('x', 0)
+              .attr('y', (_, i) => `${startY + i * lineHeight}em`)
+              .text((line) => line);
+          }),
       (update) =>
         update
           .transition()
           .duration(300)
           .ease(d3.easeBackOut)
           .style("fill", (d) => getBallColors(d, d === selectedBall).text)
-          .style(
-            "font-size",
-            (d) => `${Math.max(5, calculateRadius(d) * 0.2)}px`
-          )
-          .tween("text", function (d) {
-            return function () {
-              d3.select(this).text(d.name);
-            };
+          .style("font-size", (d) => `${calculateTextSize(d)}px`)
+          .on("end", function (d) {
+            const lines = d.name.split('\n');
+            const lineHeight = 1.2;
+            const startY = -(lines.length - 1) * lineHeight / 2;
+
+            d3.select(this)
+              .selectAll('tspan')
+              .data(lines)
+              .join('tspan')
+              .attr('x', 0)
+              .attr('y', (_, i) => `${startY + i * lineHeight}em`)
+              .text((line) => line);
           })
     );
 

@@ -4,6 +4,7 @@ export interface Ball {
   lastBumped: number; // timestamp
   growthRate: number; // pixels per day
   hue?: number; // 0-360, defaults to 210 (blue)
+  textScale?: number; // 0.5-2.0, multiplier for auto-calculated text size
   x?: number; // position for force simulation
   y?: number;
   vx?: number; // velocity
@@ -79,4 +80,37 @@ export function getBallColors(ball: Ball, isSelected: boolean = false) {
     stroke: `hsl(${hue}, 75%, 45%)`, // Darker stroke
     text: `hsl(${hue}, 75%, 95%)`, // Lighter text
   };
+}
+
+export function calculateTextSize(ball: Ball): number {
+  const radius = calculateRadius(ball);
+  const lines = ball.name.split("\n");
+  const lineCount = lines.length;
+  const longestLine = Math.max(...lines.map((line) => line.length), 1);
+
+  // Base size: proportion of radius
+  let baseSize = radius * 0.35;
+
+  // Adjust for text length - longer text needs smaller font
+  // Assume ~0.6 * fontSize per character width
+  const estimatedTextWidth = longestLine * 0.6;
+  const availableWidth = radius * 1.6; // Ball diameter minus some padding
+  if (estimatedTextWidth > availableWidth / baseSize) {
+    baseSize = availableWidth / estimatedTextWidth;
+  }
+
+  // Adjust for line count - more lines need smaller font
+  const lineHeight = 1.2;
+  const totalTextHeight = lineCount * lineHeight;
+  const availableHeight = radius * 1.6; // Ball diameter minus some padding
+  if (totalTextHeight > availableHeight / baseSize) {
+    baseSize = availableHeight / totalTextHeight;
+  }
+
+  // Apply user's text scale preference
+  const textScale = ball.textScale ?? 1.0;
+  const finalSize = baseSize * textScale;
+
+  // Minimum size for readability
+  return Math.max(2, finalSize);
 }

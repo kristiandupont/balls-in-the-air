@@ -49,19 +49,19 @@ export function* Sidebar(
           <>
             <div class="flex flex-col gap-2">
               <label class="text-sm font-medium text-gray-700">Name</label>
-              <input
-                type="text"
+              <textarea
                 value={nameInput}
+                rows={3}
                 oninput={(e: Event) => {
-                  nameInput = (e.target as HTMLInputElement).value;
+                  nameInput = (e.target as HTMLTextAreaElement).value;
                 }}
                 onchange={(e: Event) => {
-                  const value = (e.target as HTMLInputElement).value;
+                  const value = (e.target as HTMLTextAreaElement).value;
                   if (value.trim()) {
                     onUpdate({ name: value });
                   }
                 }}
-                class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
               />
             </div>
 
@@ -125,6 +125,26 @@ export function* Sidebar(
                 class="w-12 h-12 rounded-lg border-2 self-center"
                 style={`background: hsl(${selectedBall.hue ?? 210}, 75%, 65%); border-color: hsl(${selectedBall.hue ?? 210}, 75%, 45%);`}
               />
+            </div>
+
+            <div class="flex flex-col gap-2">
+              <label class="text-sm font-medium text-gray-700">
+                Text Size {selectedBall.textScale ? `(${Math.round(selectedBall.textScale * 100)}%)` : "(Auto)"}
+              </label>
+              <input
+                type="range"
+                min="50"
+                max="200"
+                value={(selectedBall.textScale ?? 1.0) * 100}
+                oninput={(e: Event) => {
+                  const value = parseInt((e.target as HTMLInputElement).value) / 100;
+                  onUpdate({ textScale: value });
+                }}
+                class="w-full"
+              />
+              <p class="text-xs text-gray-500">
+                Drag to adjust text size (auto-fit by default)
+              </p>
             </div>
 
             <div class="flex flex-col gap-2">
