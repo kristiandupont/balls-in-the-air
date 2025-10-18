@@ -267,11 +267,8 @@ export const createChartRenderer = (
       .style("cursor", "grab")
       .call(drag);
 
-    // Update clip path radii
+    // Update clip path radii (no transition needed, should update immediately)
     updatedGroups.selectAll<SVGCircleElement, Ball>("clipPath circle")
-      .transition()
-      .duration(300)
-      .ease(d3.easeBackOut)
       .attr("r", (d) => calculateRadius(d));
 
     // Update circles with smooth transition
