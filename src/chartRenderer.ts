@@ -1,182 +1,293 @@
 import * as d3 from "d3";
-import type { NodeData } from "./Chart";
-import { createZoomManager, type ZoomManager } from "./zoomManager";
+import type { Ball } from "./storage";
+import { calculateRadius } from "./storage";
 
 export interface ChartRenderer {
   svg: d3.Selection<SVGSVGElement, unknown, null, undefined>;
-  zoomManager: ZoomManager;
-  updateSelection: (
-    selectedNode: d3.HierarchyCircularNode<NodeData> | null,
-    hoveredNode: d3.HierarchyCircularNode<NodeData> | null
-  ) => void;
+  updateSelection: (selectedBall: Ball | null) => void;
+  updateBalls: (balls: Ball[], selectedBall?: Ball | null) => void;
   destroy: () => void;
 }
 
 export const createChartRenderer = (
-  treeData: NodeData,
+  balls: Ball[],
   width: number,
   height: number,
-  onNodeClick: (
-    event: MouseEvent,
-    node: d3.HierarchyCircularNode<NodeData>
-  ) => void,
-  onNodeDoubleClick: (
-    event: MouseEvent,
-    node: d3.HierarchyCircularNode<NodeData>
-  ) => void,
-  onSvgClick: (event: MouseEvent) => void
+  onBallClick: (ballId: string | null) => void,
+  onBallDragStart?: () => void,
+  onBallDragEnd?: () => void
 ): ChartRenderer => {
-  const margin = 1; // to avoid clipping the root circle stroke
-  const size = Math.min(width, height);
-  const chartWidth = size;
-  const chartHeight = size;
-
-  // Specify the number format for values
-  const format = d3.format(",d");
-
-  // Create the pack layout
-  const pack = d3
-    .pack<NodeData>()
-    .size([chartWidth - margin * 2, chartHeight - margin * 2])
-    .padding(3);
-
-  // Compute the hierarchy from the tree data
-  const hierarchyRoot = d3
-    .hierarchy(treeData)
-    .sum((d) => d.value || 0)
-    .sort((a, b) => (b.value || 0) - (a.value || 0));
-
-  const root = pack(hierarchyRoot);
+  const chartWidth = width;
+  const chartHeight = height;
 
   // Create the SVG container
   const svg = d3
     .create("svg")
     .attr("width", chartWidth)
     .attr("height", chartHeight)
-    .attr("viewBox", [-margin, -margin, chartWidth, chartHeight])
-    .attr("style", "width: 100%; height: auto; font: 10px sans-serif;")
-    .attr("text-anchor", "middle");
+    .attr("viewBox", [0, 0, chartWidth, chartHeight])
+    .attr("style", "width: 100%; height: auto; font: 14px sans-serif;")
+    .style("background", "#f9fafb");
 
-  // Container used for zooming (scale/translate)
-  const zoomLayer = svg.append("g");
+  // Initialize ball positions if not set
+  balls.forEach((ball) => {
+    if (ball.x === undefined || ball.y === undefined) {
+      ball.x = chartWidth / 2 + (Math.random() - 0.5) * 100;
+      ball.y = chartHeight / 2 + (Math.random() - 0.5) * 100;
+      ball.vx = (Math.random() - 0.5) * 2;
+      ball.vy = (Math.random() - 0.5) * 2;
+    }
+  });
 
-  // Place each node according to the layout's x and y values
-  const node = zoomLayer
-    .selectAll()
-    .data(root.descendants())
-    .join("g")
-    .attr("transform", (d) => `translate(${d.x},${d.y})`);
-
-  // Add a title
-  node.append("title").text(
-    (d) =>
-      `${d
-        .ancestors()
-        .map((d) => (d.data as NodeData).name)
-        .reverse()
-        .join("/")}\n${format(d.value || 0)}`
-  );
-
-  // Add a filled or stroked circle
-  const circles = node
-    .append("circle")
-    .attr("fill", (d) => (d.children ? "#fff" : "#ddd"))
-    .attr("stroke", (d) => (d.children ? "#bbb" : null))
-    .attr("stroke-width", 1)
-    .attr("r", (d) => d.r)
-    .style("cursor", "pointer")
-    .on("click", onNodeClick)
-    .on("dblclick", onNodeDoubleClick);
-
-  // Add labels to all nodes; we'll control visibility based on zoom/size
-  const text = node
-    .append("text")
-    .attr("clip-path", (d) => `circle(${d.r})`)
-    .style("pointer-events", "none");
-
-  // Add a tspan for each CamelCase-separated word
-  text
-    .selectAll()
-    .data((d) => (d.data as NodeData).name.split(/(?=[A-Z][a-z])|\s+/g))
-    .join("tspan")
-    .attr("x", 0)
-    .attr("y", (_, i, nodes) => `${i - nodes.length / 2 + 0.35}em`)
-    .text((d) => d);
-
-  // Add a tspan for the node's value
-  text
-    .append("tspan")
-    .attr("x", 0)
-    .attr(
-      "y",
-      (d) =>
-        `${
-          (d.data as NodeData).name.split(/(?=[A-Z][a-z])|\s+/g).length / 2 +
-          0.35
-        }em`
+  // Create force simulation for dynamic movement
+  const forceSimulation = d3
+    .forceSimulation(balls)
+    .force(
+      "collision",
+      d3.forceCollide<Ball>().radius((d) => calculateRadius(d) + 2)
     )
-    .attr("fill-opacity", 0.7)
-    .text((d) => format(d.value || 0));
+    .force("x", d3.forceX(chartWidth / 2).strength(0.05))
+    .force("y", d3.forceY(chartHeight / 2).strength(0.05))
+    .force("charge", d3.forceManyBody<Ball>().strength(-30))
+    .force("boundary", () => {
+      // Custom containment force to keep balls within viewport
+      const padding = 10;
+      const nodes = forceSimulation.nodes();
+      nodes.forEach((ball) => {
+        const r = calculateRadius(ball);
+        if (ball.x! < r + padding) {
+          ball.x = r + padding;
+          ball.vx = Math.abs(ball.vx || 0) * 0.5;
+        }
+        if (ball.x! > chartWidth - r - padding) {
+          ball.x = chartWidth - r - padding;
+          ball.vx = -Math.abs(ball.vx || 0) * 0.5;
+        }
+        if (ball.y! < r + padding) {
+          ball.y = r + padding;
+          ball.vy = Math.abs(ball.vy || 0) * 0.5;
+        }
+        if (ball.y! > chartHeight - r - padding) {
+          ball.y = chartHeight - r - padding;
+          ball.vy = -Math.abs(ball.vy || 0) * 0.5;
+        }
+      });
+    })
+    .alpha(1)
+    .alphaDecay(0.001)
+    .velocityDecay(0.8)
+    .on("tick", tick);
 
-  // Create zoom manager
-  const zoomManager = createZoomManager(
-    chartWidth,
-    chartHeight,
-    margin,
-    root,
-    svg as d3.Selection<SVGSVGElement, unknown, null, undefined>,
-    zoomLayer as d3.Selection<SVGGElement, unknown, null, undefined>,
-    node as d3.Selection<
-      SVGGElement,
-      d3.HierarchyCircularNode<NodeData>,
-      SVGGElement,
-      unknown
-    >,
-    text as d3.Selection<
-      SVGTextElement,
-      d3.HierarchyCircularNode<NodeData>,
-      SVGGElement,
-      unknown
-    >
-  );
+  // Track drag distance to distinguish click from drag
+  let isDragging = false;
+  let dragDistance = 0;
+  let dragStartTime = 0;
+  let justClickedBall = false;
 
-  // Add click-outside-to-zoom-out functionality
-  (svg as d3.Selection<SVGSVGElement, unknown, null, undefined>).on(
-    "click",
-    onSvgClick
-  );
+  // Drag behavior
+  const drag = d3
+    .drag<SVGGElement, Ball>()
+    .on("start", function (event, d) {
+      isDragging = false;
+      dragDistance = 0;
+      dragStartTime = Date.now();
+      // Immediately pause simulation to prevent ball movement during click
+      forceSimulation.alphaTarget(0).alpha(0.05);
+      d.fx = d.x;
+      d.fy = d.y;
+    })
+    .on("drag", function (event, d) {
+      dragDistance += Math.abs(event.dx) + Math.abs(event.dy);
+      if (dragDistance > 5) {
+        // Only start actual dragging if moved more than 5 pixels
+        if (!isDragging) {
+          isDragging = true;
+          if (onBallDragStart) onBallDragStart();
+          forceSimulation.alphaTarget(0.3).restart();
+        }
+        d.fx = event.x;
+        d.fy = event.y;
+      }
+    })
+    .on("end", function (event, d) {
+      const clickDuration = Date.now() - dragStartTime;
 
-  const updateSelection = (
-    selectedNode: d3.HierarchyCircularNode<NodeData> | null,
-    hoveredNode: d3.HierarchyCircularNode<NodeData> | null
-  ) => {
-    circles
+      console.log('Drag end:', {
+        isDragging,
+        dragDistance,
+        clickDuration,
+        ballName: d.name,
+        willClick: !isDragging && clickDuration < 300
+      });
+
+      if (isDragging) {
+        if (onBallDragEnd) onBallDragEnd();
+        forceSimulation.alphaTarget(0);
+        d.fx = undefined;
+        d.fy = undefined;
+        isDragging = false;
+      } else {
+        // Release fixed position
+        d.fx = undefined;
+        d.fy = undefined;
+        // Restart simulation gently
+        forceSimulation.alphaTarget(0).alpha(0.3).restart();
+
+        // If we didn't really drag AND it was quick (< 300ms), treat it as a click
+        if (clickDuration < 300) {
+          console.log('Calling onBallClick for:', d.name, d.id);
+          justClickedBall = true;
+          onBallClick(d.id);
+          // Reset flag after a short delay (after SVG click event would have fired)
+          setTimeout(() => {
+            justClickedBall = false;
+          }, 10);
+        }
+      }
+      dragDistance = 0;
+    });
+
+  // Create ball groups
+  let ballGroups = svg
+    .selectAll<SVGGElement, Ball>("g.ball")
+    .data(balls, (d) => d.id)
+    .join("g")
+    .attr("class", "ball")
+    .style("cursor", "grab")
+    .call(drag);
+
+  // Add circles
+  const circles = ballGroups
+    .append("circle")
+    .attr("r", (d) => calculateRadius(d))
+    .attr("fill", "#60a5fa")
+    .attr("stroke", "#2563eb")
+    .attr("stroke-width", 2);
+
+  // Add labels
+  const labels = ballGroups
+    .append("text")
+    .attr("text-anchor", "middle")
+    .attr("dy", "0.3em")
+    .style("pointer-events", "none")
+    .style("fill", "white")
+    .style("font-weight", "600")
+    .text((d) => d.name);
+
+  function tick() {
+    svg
+      .selectAll<SVGGElement, Ball>("g.ball")
+      .attr("transform", (d) => `translate(${d.x},${d.y})`);
+  }
+
+  // Click background to deselect
+  svg.on("click", () => {
+    console.log('SVG background clicked, justClickedBall:', justClickedBall);
+    if (!justClickedBall) {
+      onBallClick(null);
+    }
+  });
+
+  const updateSelection = (selectedBall: Ball | null) => {
+    svg
+      .selectAll<SVGCircleElement, Ball>("g.ball circle")
       .transition()
       .duration(200)
-      .attr("fill", (d) => {
-        if (selectedNode === d) return "#4f46e5"; // selected: indigo
-        if (hoveredNode === d) return "#f59e0b"; // hovered: amber
-        return d.children ? "#fff" : "#ddd"; // default
-      })
-      .attr("stroke", (d) => {
-        if (selectedNode === d) return "#3730a3"; // selected: darker indigo
-        if (hoveredNode === d) return "#d97706"; // hovered: darker amber
-        return d.children ? "#bbb" : null; // default
-      })
-      .attr("stroke-width", (d) => {
-        if (selectedNode === d || hoveredNode === d) return 3;
-        return 1;
-      });
+      .attr("fill", (d) => (d === selectedBall ? "#f59e0b" : "#60a5fa"))
+      .attr("stroke", (d) => (d === selectedBall ? "#d97706" : "#2563eb"))
+      .attr("stroke-width", (d) => (d === selectedBall ? 4 : 2));
+  };
+
+  const updateBalls = (newBalls: Ball[], selectedBall?: Ball | null) => {
+    // Initialize positions for any new balls
+    newBalls.forEach((ball) => {
+      if (ball.x === undefined || ball.y === undefined) {
+        ball.x = chartWidth / 2 + (Math.random() - 0.5) * 100;
+        ball.y = chartHeight / 2 + (Math.random() - 0.5) * 100;
+        ball.vx = (Math.random() - 0.5) * 2;
+        ball.vy = (Math.random() - 0.5) * 2;
+      }
+    });
+
+    // Update simulation nodes
+    forceSimulation.nodes(newBalls);
+
+    // Update collision force with new radii
+    forceSimulation.force(
+      "collision",
+      d3.forceCollide<Ball>().radius((d) => calculateRadius(d) + 2)
+    );
+
+    // Update visual elements
+    const updatedGroups = svg
+      .selectAll<SVGGElement, Ball>("g.ball")
+      .data(newBalls, (d) => d.id)
+      .join(
+        (enter) =>
+          enter
+            .append("g")
+            .attr("class", "ball")
+            .attr("transform", (d) => `translate(${d.x},${d.y})`),
+        (update) => update,
+        (exit) => exit.remove()
+      )
+      .style("cursor", "grab")
+      .call(drag);
+
+    // Update circles with smooth transition
+    const circles = updatedGroups.selectAll<SVGCircleElement, Ball>("circle");
+    const circlesData = circles.data((d) => [d]);
+
+    circlesData
+      .join(
+        (enter) =>
+          enter
+            .append("circle")
+            .attr("r", (d) => calculateRadius(d))
+            .attr("fill", (d) => (d === selectedBall ? "#f59e0b" : "#60a5fa"))
+            .attr("stroke", (d) => (d === selectedBall ? "#d97706" : "#2563eb"))
+            .attr("stroke-width", (d) => (d === selectedBall ? 4 : 2)),
+        (update) =>
+          update
+            .transition()
+            .duration(300)
+            .ease(d3.easeBackOut)
+            .attr("r", (d) => calculateRadius(d))
+            .attr("fill", (d) => (d === selectedBall ? "#f59e0b" : "#60a5fa"))
+            .attr("stroke", (d) => (d === selectedBall ? "#d97706" : "#2563eb"))
+            .attr("stroke-width", (d) => (d === selectedBall ? 4 : 2))
+      );
+
+    // Update text
+    const texts = updatedGroups.selectAll<SVGTextElement, Ball>("text");
+    const textsData = texts.data((d) => [d]);
+
+    textsData
+      .join(
+        (enter) =>
+          enter
+            .append("text")
+            .attr("text-anchor", "middle")
+            .attr("dy", "0.3em")
+            .style("pointer-events", "none")
+            .style("fill", "white")
+            .style("font-weight", "600")
+            .text((d) => d.name),
+        (update) => update.text((d) => d.name)
+      );
+
+    forceSimulation.alpha(1).restart();
   };
 
   const destroy = () => {
+    forceSimulation.stop();
     svg.remove();
   };
 
   return {
     svg: svg as d3.Selection<SVGSVGElement, unknown, null, undefined>,
-    zoomManager,
     updateSelection,
+    updateBalls,
     destroy,
   };
 };

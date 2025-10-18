@@ -1,112 +1,145 @@
 import type { Context } from "@b9g/crank";
-import * as d3 from "d3";
-import type { NodeData } from "./Chart";
+import type { Ball } from "./storage";
 
-interface FloatingMenuProps {
-  selectedNode: d3.HierarchyCircularNode<NodeData> | null;
-  menuPosition: { x: number; y: number } | null;
-  currentFocus: d3.HierarchyCircularNode<NodeData> | null;
-  onAddChild: () => void;
-  onRename: () => void;
+interface SidebarProps {
+  selectedBall: Ball | null;
+  onBump: () => void;
+  onUpdate: (updates: Partial<Ball>) => void;
   onDelete: () => void;
+  onAdd: () => void;
+  onClose: () => void;
 }
 
-export function* FloatingMenu(
+export function* Sidebar(
   this: Context,
-  {
-    selectedNode,
-    menuPosition,
-    currentFocus,
-    onAddChild,
-    onRename,
-    onDelete,
-  }: FloatingMenuProps
+  { selectedBall, onBump, onUpdate, onDelete, onAdd, onClose }: SidebarProps
 ) {
-  for (const _ of this) {
-    if (!selectedNode || !menuPosition) {
-      return null;
-    }
+  let nameInput = selectedBall?.name || "";
+  let growthRateInput = selectedBall?.growthRate.toString() || "2";
+
+  for ({
+    selectedBall,
+    onBump,
+    onUpdate,
+    onDelete,
+    onAdd,
+    onClose,
+  } of this) {
+    // Update local state when selectedBall changes
+    nameInput = selectedBall?.name || "";
+    growthRateInput = selectedBall?.growthRate.toString() || "2";
 
     yield (
-      <div
-        class="absolute bg-white rounded-lg shadow-lg border border-gray-200 p-2 z-10"
-        style={`left: ${menuPosition.x + 20}px; top: ${menuPosition.y - 20}px;`}
-      >
-        <div class="flex flex-col gap-1">
-          <button
-            class="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-            onclick={onAddChild}
-          >
-            Add Child
-          </button>
-          {selectedNode !== currentFocus && (
-            <>
-              <button
-                class="px-3 py-1 text-sm bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
-                onclick={onRename}
-              >
-                Rename
-              </button>
-              <button
-                class="px-3 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
-                onclick={onDelete}
-              >
-                Delete
-              </button>
-            </>
+      <div class="w-80 bg-white border-l border-gray-200 p-6 flex flex-col gap-4 overflow-y-auto">
+        <div class="flex items-center justify-between">
+          <h2 class="text-xl font-bold text-gray-800">
+            {selectedBall ? "Edit Ball" : "Balls in the Air"}
+          </h2>
+          {selectedBall && (
+            <button
+              class="text-gray-500 hover:text-gray-700"
+              onclick={onClose}
+            >
+              ✕
+            </button>
           )}
         </div>
-      </div>
-    );
-  }
-}
 
-interface InlineEditorProps {
-  isEditingName: boolean;
-  editingNode: d3.HierarchyCircularNode<NodeData> | null;
-  menuPosition: { x: number; y: number } | null;
-  onRename: (newName: string) => void;
-  onCancel: () => void;
-}
+        {selectedBall ? (
+          <>
+            <div class="flex flex-col gap-2">
+              <label class="text-sm font-medium text-gray-700">Name</label>
+              <input
+                type="text"
+                value={nameInput}
+                oninput={(e: Event) => {
+                  nameInput = (e.target as HTMLInputElement).value;
+                }}
+                onchange={(e: Event) => {
+                  const value = (e.target as HTMLInputElement).value;
+                  if (value.trim()) {
+                    onUpdate({ name: value });
+                  }
+                }}
+                class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
 
-export function* InlineEditor(
-  this: Context,
-  {
-    isEditingName,
-    editingNode,
-    menuPosition,
-    onRename,
-    onCancel,
-  }: InlineEditorProps
-) {
-  for (const _ of this) {
-    if (!isEditingName || !editingNode || !menuPosition) {
-      return null;
-    }
+            <div class="flex flex-col gap-2">
+              <label class="text-sm font-medium text-gray-700">
+                Growth Rate (px/day)
+              </label>
+              <input
+                type="number"
+                step="0.1"
+                min="0.1"
+                value={growthRateInput}
+                oninput={(e: Event) => {
+                  growthRateInput = (e.target as HTMLInputElement).value;
+                }}
+                onchange={(e: Event) => {
+                  const value = parseFloat(
+                    (e.target as HTMLInputElement).value
+                  );
+                  if (!isNaN(value) && value > 0) {
+                    onUpdate({ growthRate: value });
+                  }
+                }}
+                class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <p class="text-xs text-gray-500">
+                Current size:{" "}
+                {Math.round(
+                  20 +
+                    ((Date.now() - selectedBall.lastBumped) /
+                      (1000 * 60 * 60 * 24)) *
+                      selectedBall.growthRate
+                )}
+                px
+              </p>
+            </div>
 
-    yield (
-      <div
-        class="absolute bg-white rounded-lg shadow-lg border border-gray-200 p-2 z-10"
-        style={`left: ${menuPosition.x}px; top: ${menuPosition.y + 20}px;`}
-      >
-        <input
-          type="text"
-          value={editingNode.data.name}
-          class="px-2 py-1 border border-gray-300 rounded text-sm"
-          onkeydown={(e: KeyboardEvent) => {
-            if (e.key === "Enter") {
-              const target = e.target as HTMLInputElement;
-              onRename(target.value);
-            } else if (e.key === "Escape") {
-              onCancel();
-            }
-          }}
-          onblur={(e: FocusEvent) => {
-            const target = e.target as HTMLInputElement;
-            onRename(target.value);
-          }}
-          autofocus
-        />
+            <div class="flex flex-col gap-2">
+              <label class="text-sm font-medium text-gray-700">
+                Last bumped
+              </label>
+              <p class="text-sm text-gray-600">
+                {new Date(selectedBall.lastBumped).toLocaleDateString()} (
+                {Math.floor(
+                  (Date.now() - selectedBall.lastBumped) /
+                    (1000 * 60 * 60 * 24)
+                )}{" "}
+                days ago)
+              </p>
+            </div>
+
+            <button
+              class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-medium"
+              onclick={onBump}
+            >
+              Bump (Reset Timer)
+            </button>
+
+            <button
+              class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium mt-auto"
+              onclick={onDelete}
+            >
+              Delete Ball
+            </button>
+          </>
+        ) : (
+          <>
+            <p class="text-gray-600">
+              Click a ball to edit it, or add a new one.
+            </p>
+            <button
+              class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium"
+              onclick={onAdd}
+            >
+              + Add New Ball
+            </button>
+          </>
+        )}
       </div>
     );
   }

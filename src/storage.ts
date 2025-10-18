@@ -1,41 +1,62 @@
-import type { NodeData } from "./Chart";
-
-const STORAGE_KEY = "tree-data";
-
-const DEFAULT_ROOT: NodeData = {
-  name: "Root",
-  value: 1,
-  children: [],
-};
-
-// Ensure all nodes have values for D3 circle packing
-function ensureNodeValues(node: NodeData): NodeData {
-  if (node.value === undefined || node.value === null) {
-    node.value = 1;
-  }
-  if (node.children) {
-    node.children = node.children.map(ensureNodeValues);
-  }
-  return node;
+export interface Ball {
+  id: string;
+  name: string;
+  lastBumped: number; // timestamp
+  growthRate: number; // pixels per day
+  x?: number; // position for force simulation
+  y?: number;
+  vx?: number; // velocity
+  vy?: number;
+  fx?: number | null; // fixed position during drag
+  fy?: number | null;
 }
 
-export function loadTreeData(): NodeData {
+const STORAGE_KEY = "balls-data";
+
+const DEFAULT_BALLS: Ball[] = [
+  {
+    id: "1",
+    name: "Clean coffee grinder",
+    lastBumped: Date.now() - 15 * 24 * 60 * 60 * 1000, // 15 days ago
+    growthRate: 2, // grows 2px per day, so ~60px in 30 days
+  },
+  {
+    id: "2",
+    name: "Water plants",
+    lastBumped: Date.now() - 5 * 24 * 60 * 60 * 1000, // 5 days ago
+    growthRate: 5, // grows faster - weekly task
+  },
+  {
+    id: "3",
+    name: "Review finances",
+    lastBumped: Date.now() - 20 * 24 * 60 * 60 * 1000, // 20 days ago
+    growthRate: 1.5, // monthly task
+  },
+];
+
+export function loadBalls(): Ball[] {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
-      const data = JSON.parse(stored) as NodeData;
-      return ensureNodeValues(data);
+      return JSON.parse(stored) as Ball[];
     }
   } catch (error) {
-    console.error("Failed to load tree data from localStorage:", error);
+    console.error("Failed to load balls from localStorage:", error);
   }
-  return DEFAULT_ROOT;
+  return DEFAULT_BALLS;
 }
 
-export function saveTreeData(data: NodeData): void {
+export function saveBalls(balls: Ball[]): void {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(balls));
   } catch (error) {
-    console.error("Failed to save tree data to localStorage:", error);
+    console.error("Failed to save balls to localStorage:", error);
   }
+}
+
+export function calculateRadius(ball: Ball): number {
+  const daysSinceBump = (Date.now() - ball.lastBumped) / (1000 * 60 * 60 * 24);
+  const minRadius = 20;
+  const result = minRadius + daysSinceBump * ball.growthRate;
+  return result;
 }
