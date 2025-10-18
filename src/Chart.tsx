@@ -123,7 +123,7 @@ function* D3ChartInner(
         <div class="w-full h-full relative">
           {/* Title in background */}
           <div class="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-0">
-            <h1 class="text-9xl font-bold text-gray-100">
+            <h1 class="text-[18vw] font-bold text-gray-100 tracking-[-8%]">
               Balls in the Air
             </h1>
           </div>

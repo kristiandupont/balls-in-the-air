@@ -70,16 +70,16 @@ export function getBallColors(ball: Ball, isSelected: boolean = false) {
   if (isSelected) {
     // Darker version when selected
     return {
-      fill: `hsl(${hue}, 75%, 65%)`, // Main color
-      stroke: `hsl(${hue}, 75%, 45%)`, // Darker stroke
-      text: `hsl(${hue}, 75%, 95%)`, // Lighter text
+      fill: `hsl(${hue}, 75%, 65%)`,
+      stroke: `hsl(${hue}, 75%, 45%)`,
+      text: `hsl(${hue}, 75%, 15%)`,
     };
   }
 
   return {
-    fill: `hsl(${hue}, 75%, 50%)`, // Darker fill
-    stroke: `hsl(${hue}, 75%, 30%)`, // Even darker stroke
-    text: `hsl(${hue}, 75%, 85%)`, // Keep text light
+    fill: `hsl(${hue}, 75%, 50%)`,
+    stroke: `hsl(${hue}, 75%, 30%)`,
+    text: `hsl(${hue}, 75%, 25%)`,
   };
 }
 

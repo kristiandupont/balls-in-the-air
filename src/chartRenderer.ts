@@ -43,7 +43,7 @@ export const createChartRenderer = (
     .attr("width", chartWidth)
     .attr("height", chartHeight)
     .attr("viewBox", [0, 0, chartWidth, chartHeight])
-    .attr("style", "width: 100%; height: auto; font: 14px sans-serif;");
+    .attr("style", "width: 100%; height: 100%; font: 14px sans-serif;");
 
   // Initialize ball positions if not set
   balls.forEach((ball) => {
