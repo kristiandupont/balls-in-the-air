@@ -111,14 +111,6 @@ export function* BallPropertiesPanel(
                   hsl(360, 75%, 65%)
                 );`}
               />
-              <div
-                class="w-12 h-12 rounded-lg border-2 self-center"
-                style={`background: hsl(${
-                  selectedBall.hue ?? 210
-                }, 75%, 65%); border-color: hsl(${
-                  selectedBall.hue ?? 210
-                }, 75%, 45%);`}
-              />
             </div>
 
             <div class="flex flex-col gap-2">
