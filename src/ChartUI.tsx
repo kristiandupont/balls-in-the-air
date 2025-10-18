@@ -1,5 +1,6 @@
 import type { Context } from "@b9g/crank";
 import type { Ball } from "./storage";
+import { calculateRadius, MILLISECONDS_PER_DAY } from "./storage";
 
 interface SidebarProps {
   selectedBall: Ball | null;
@@ -88,14 +89,7 @@ export function* Sidebar(
                 class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <p class="text-xs text-gray-500">
-                Current size:{" "}
-                {Math.round(
-                  20 +
-                    ((Date.now() - selectedBall.lastBumped) /
-                      (1000 * 60 * 60 * 24)) *
-                      selectedBall.growthRate
-                )}
-                px
+                Current size: {Math.round(calculateRadius(selectedBall))}px
               </p>
             </div>
 
@@ -153,10 +147,7 @@ export function* Sidebar(
               </label>
               <p class="text-sm text-gray-600">
                 {new Date(selectedBall.lastBumped).toLocaleDateString()} (
-                {Math.floor(
-                  (Date.now() - selectedBall.lastBumped) /
-                    (1000 * 60 * 60 * 24)
-                )}{" "}
+                {Math.floor((Date.now() - selectedBall.lastBumped) / MILLISECONDS_PER_DAY)}{" "}
                 days ago)
               </p>
             </div>

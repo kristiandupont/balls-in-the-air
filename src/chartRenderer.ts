@@ -9,6 +9,23 @@ export interface ChartRenderer {
   destroy: () => void;
 }
 
+function renderMultiLineText(
+  textSelection: d3.Selection<SVGTextElement, Ball, any, any>,
+  ball: Ball
+) {
+  const lines = ball.name.split('\n');
+  const lineHeight = 1.2;
+  const startY = -(lines.length - 1) * lineHeight / 2;
+
+  textSelection
+    .selectAll('tspan')
+    .data(lines)
+    .join('tspan')
+    .attr('x', 0)
+    .attr('y', (_, i) => `${startY + i * lineHeight}em`)
+    .text((line) => line);
+}
+
 export const createChartRenderer = (
   balls: Ball[],
   width: number,
@@ -112,14 +129,6 @@ export const createChartRenderer = (
     .on("end", function (event, d) {
       const clickDuration = Date.now() - dragStartTime;
 
-      console.log("Drag end:", {
-        isDragging,
-        dragDistance,
-        clickDuration,
-        ballName: d.name,
-        willClick: !isDragging && clickDuration < 300,
-      });
-
       if (isDragging) {
         if (onBallDragEnd) onBallDragEnd();
         forceSimulation.alphaTarget(0);
@@ -135,7 +144,6 @@ export const createChartRenderer = (
 
         // If we didn't really drag AND it was quick (< 300ms), treat it as a click
         if (clickDuration < 300) {
-          console.log("Calling onBallClick for:", d.name, d.id);
           justClickedBall = true;
           onBallClick(d.id);
           // Reset flag after a short delay (after SVG click event would have fired)
@@ -182,17 +190,7 @@ export const createChartRenderer = (
     .style("font-weight", "600")
     .style("font-size", (d) => `${calculateTextSize(d)}px`)
     .each(function (d) {
-      const lines = d.name.split('\n');
-      const lineHeight = 1.2;
-      const startY = -(lines.length - 1) * lineHeight / 2;
-
-      d3.select(this)
-        .selectAll('tspan')
-        .data(lines)
-        .join('tspan')
-        .attr('x', 0)
-        .attr('y', (_, i) => `${startY + i * lineHeight}em`)
-        .text((line) => line);
+      renderMultiLineText(d3.select(this), d);
     });
 
   function tick() {
@@ -203,7 +201,6 @@ export const createChartRenderer = (
 
   // Click background to deselect
   svg.on("click", () => {
-    console.log("SVG background clicked, justClickedBall:", justClickedBall);
     if (!justClickedBall) {
       onBallClick(null);
     }
@@ -316,17 +313,7 @@ export const createChartRenderer = (
           .style("font-weight", "600")
           .style("font-size", (d) => `${calculateTextSize(d)}px`)
           .each(function (d) {
-            const lines = d.name.split('\n');
-            const lineHeight = 1.2;
-            const startY = -(lines.length - 1) * lineHeight / 2;
-
-            d3.select(this)
-              .selectAll('tspan')
-              .data(lines)
-              .join('tspan')
-              .attr('x', 0)
-              .attr('y', (_, i) => `${startY + i * lineHeight}em`)
-              .text((line) => line);
+            renderMultiLineText(d3.select(this), d);
           }),
       (update) =>
         update
@@ -336,17 +323,7 @@ export const createChartRenderer = (
           .style("fill", (d) => getBallColors(d, d === selectedBall).text)
           .style("font-size", (d) => `${calculateTextSize(d)}px`)
           .on("end", function (d) {
-            const lines = d.name.split('\n');
-            const lineHeight = 1.2;
-            const startY = -(lines.length - 1) * lineHeight / 2;
-
-            d3.select(this)
-              .selectAll('tspan')
-              .data(lines)
-              .join('tspan')
-              .attr('x', 0)
-              .attr('y', (_, i) => `${startY + i * lineHeight}em`)
-              .text((line) => line);
+            renderMultiLineText(d3.select(this), d);
           })
     );
 

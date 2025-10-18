@@ -13,6 +13,10 @@ function* D3ChartInner(
   let balls: Ball[] = loadBalls();
   let chartKey = 0;
 
+  const getSelectedBall = (): Ball | null => {
+    return balls.find((b) => b.id === selectedBallId) || null;
+  };
+
   const refresh = () => {
     // eslint-disable-next-line crank/prefer-refresh-callback
     this.refresh();
@@ -21,8 +25,7 @@ function* D3ChartInner(
   // Update ball sizes periodically (every minute)
   const updateInterval = setInterval(() => {
     if (chartRenderer) {
-      const selectedBall = balls.find((b) => b.id === selectedBallId) || null;
-      chartRenderer.updateBalls(balls, selectedBall);
+      chartRenderer.updateBalls(balls, getSelectedBall());
     }
   }, 300);
 
@@ -32,11 +35,6 @@ function* D3ChartInner(
   });
 
   const handleBallClick = (ballId: string | null) => {
-    console.log('handleBallClick called', {
-      ballId,
-      currentSelectedId: selectedBallId
-    });
-
     if (ballId === null) {
       // Background click - deselect
       selectedBallId = null;
@@ -45,11 +43,8 @@ function* D3ChartInner(
       selectedBallId = selectedBallId === ballId ? null : ballId;
     }
 
-    console.log('After click, selectedBallId:', selectedBallId);
-
     if (chartRenderer) {
-      const selectedBall = balls.find((b) => b.id === selectedBallId) || null;
-      chartRenderer.updateSelection(selectedBall);
+      chartRenderer.updateSelection(getSelectedBall());
     }
     refresh();
   };
@@ -63,8 +58,7 @@ function* D3ChartInner(
     saveBalls(balls);
 
     if (chartRenderer) {
-      const selectedBall = balls.find((b) => b.id === selectedBallId) || null;
-      chartRenderer.updateBalls(balls, selectedBall);
+      chartRenderer.updateBalls(balls, getSelectedBall());
     }
     refresh();
   };
@@ -78,8 +72,7 @@ function* D3ChartInner(
     saveBalls(balls);
 
     if (chartRenderer) {
-      const selectedBall = balls.find((b) => b.id === selectedBallId) || null;
-      chartRenderer.updateBalls(balls, selectedBall);
+      chartRenderer.updateBalls(balls, getSelectedBall());
     }
     refresh();
   };
@@ -153,7 +146,7 @@ function* D3ChartInner(
         </div>
 
         <Sidebar
-          selectedBall={balls.find((b) => b.id === selectedBallId) || null}
+          selectedBall={getSelectedBall()}
           onBump={handleBump}
           onUpdate={handleUpdate}
           onDelete={handleDelete}

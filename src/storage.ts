@@ -14,24 +14,27 @@ export interface Ball {
 }
 
 const STORAGE_KEY = "balls-data";
+const MIN_BALL_RADIUS = 20;
+const DEFAULT_HUE = 210;
+export const MILLISECONDS_PER_DAY = 1000 * 60 * 60 * 24;
 
 const DEFAULT_BALLS: Ball[] = [
   {
     id: "1",
     name: "Clean coffee grinder",
-    lastBumped: Date.now() - 15 * 24 * 60 * 60 * 1000, // 15 days ago
+    lastBumped: Date.now() - 15 * MILLISECONDS_PER_DAY, // 15 days ago
     growthRate: 2, // grows 2px per day, so ~60px in 30 days
   },
   {
     id: "2",
     name: "Water plants",
-    lastBumped: Date.now() - 5 * 24 * 60 * 60 * 1000, // 5 days ago
+    lastBumped: Date.now() - 5 * MILLISECONDS_PER_DAY, // 5 days ago
     growthRate: 5, // grows faster - weekly task
   },
   {
     id: "3",
     name: "Review finances",
-    lastBumped: Date.now() - 20 * 24 * 60 * 60 * 1000, // 20 days ago
+    lastBumped: Date.now() - 20 * MILLISECONDS_PER_DAY, // 20 days ago
     growthRate: 1.5, // monthly task
   },
 ];
@@ -57,28 +60,26 @@ export function saveBalls(balls: Ball[]): void {
 }
 
 export function calculateRadius(ball: Ball): number {
-  const daysSinceBump = (Date.now() - ball.lastBumped) / (1000 * 60 * 60 * 24);
-  const minRadius = 20;
-  const result = minRadius + daysSinceBump * ball.growthRate;
-  return result;
+  const daysSinceBump = (Date.now() - ball.lastBumped) / MILLISECONDS_PER_DAY;
+  return MIN_BALL_RADIUS + daysSinceBump * ball.growthRate;
 }
 
 export function getBallColors(ball: Ball, isSelected: boolean = false) {
-  const hue = ball.hue ?? 210; // Default to blue
+  const hue = ball.hue ?? DEFAULT_HUE;
 
   if (isSelected) {
     // Darker version when selected
     return {
-      fill: `hsl(${hue}, 75%, 50%)`, // Darker fill
-      stroke: `hsl(${hue}, 75%, 30%)`, // Even darker stroke
-      text: `hsl(${hue}, 75%, 95%)`, // Keep text light
+      fill: `hsl(${hue}, 75%, 65%)`, // Main color
+      stroke: `hsl(${hue}, 75%, 45%)`, // Darker stroke
+      text: `hsl(${hue}, 75%, 95%)`, // Lighter text
     };
   }
 
   return {
-    fill: `hsl(${hue}, 75%, 65%)`, // Main color
-    stroke: `hsl(${hue}, 75%, 45%)`, // Darker stroke
-    text: `hsl(${hue}, 75%, 95%)`, // Lighter text
+    fill: `hsl(${hue}, 75%, 50%)`, // Darker fill
+    stroke: `hsl(${hue}, 75%, 30%)`, // Even darker stroke
+    text: `hsl(${hue}, 75%, 85%)`, // Keep text light
   };
 }
 
