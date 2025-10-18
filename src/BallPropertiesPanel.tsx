@@ -2,7 +2,7 @@ import type { Context } from "@b9g/crank";
 import type { Ball } from "./storage";
 import { calculateRadius, MILLISECONDS_PER_DAY } from "./storage";
 
-interface SidebarProps {
+interface BallPropertiesPanelProps {
   selectedBall: Ball | null;
   onBump: () => void;
   onUpdate: (updates: Partial<Ball>) => void;
@@ -11,9 +11,16 @@ interface SidebarProps {
   onClose: () => void;
 }
 
-export function* Sidebar(
+export function* BallPropertiesPanel(
   this: Context,
-  { selectedBall, onBump, onUpdate, onDelete, onAdd, onClose }: SidebarProps
+  {
+    selectedBall,
+    onBump,
+    onUpdate,
+    onDelete,
+    onAdd,
+    onClose,
+  }: BallPropertiesPanelProps
 ) {
   let nameInput = selectedBall?.name || "";
   let growthRateInput = selectedBall?.growthRate.toString() || "2";

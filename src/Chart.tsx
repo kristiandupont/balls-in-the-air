@@ -1,7 +1,7 @@
 import type { Context } from "@b9g/crank";
 import { loadBalls, saveBalls, type Ball } from "./storage";
 import { createChartRenderer, type ChartRenderer } from "./chartRenderer";
-import { Sidebar } from "./ChartUI";
+import { BallPropertiesPanel } from "./BallPropertiesPanel";
 
 // Inner component that creates the actual D3 chart
 function* D3ChartInner(
@@ -154,7 +154,7 @@ function* D3ChartInner(
         </div>
 
         {/* Floating UI elements */}
-        <Sidebar
+        <BallPropertiesPanel
           selectedBall={getSelectedBall()}
           onBump={handleBump}
           onUpdate={handleUpdate}
