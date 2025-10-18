@@ -3,6 +3,7 @@ export interface Ball {
   name: string;
   lastBumped: number; // timestamp
   growthRate: number; // pixels per day
+  hue?: number; // 0-360, defaults to 210 (blue)
   x?: number; // position for force simulation
   y?: number;
   vx?: number; // velocity
@@ -59,4 +60,23 @@ export function calculateRadius(ball: Ball): number {
   const minRadius = 20;
   const result = minRadius + daysSinceBump * ball.growthRate;
   return result;
+}
+
+export function getBallColors(ball: Ball, isSelected: boolean = false) {
+  const hue = ball.hue ?? 210; // Default to blue
+
+  if (isSelected) {
+    // Darker version when selected
+    return {
+      fill: `hsl(${hue}, 75%, 50%)`, // Darker fill
+      stroke: `hsl(${hue}, 75%, 30%)`, // Even darker stroke
+      text: `hsl(${hue}, 75%, 95%)`, // Keep text light
+    };
+  }
+
+  return {
+    fill: `hsl(${hue}, 75%, 65%)`, // Main color
+    stroke: `hsl(${hue}, 75%, 45%)`, // Darker stroke
+    text: `hsl(${hue}, 75%, 95%)`, // Lighter text
+  };
 }

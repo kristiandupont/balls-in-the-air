@@ -1,6 +1,6 @@
 import * as d3 from "d3";
 import type { Ball } from "./storage";
-import { calculateRadius } from "./storage";
+import { calculateRadius, getBallColors } from "./storage";
 
 export interface ChartRenderer {
   svg: d3.Selection<SVGSVGElement, unknown, null, undefined>;
@@ -112,12 +112,12 @@ export const createChartRenderer = (
     .on("end", function (event, d) {
       const clickDuration = Date.now() - dragStartTime;
 
-      console.log('Drag end:', {
+      console.log("Drag end:", {
         isDragging,
         dragDistance,
         clickDuration,
         ballName: d.name,
-        willClick: !isDragging && clickDuration < 300
+        willClick: !isDragging && clickDuration < 300,
       });
 
       if (isDragging) {
@@ -135,7 +135,7 @@ export const createChartRenderer = (
 
         // If we didn't really drag AND it was quick (< 300ms), treat it as a click
         if (clickDuration < 300) {
-          console.log('Calling onBallClick for:', d.name, d.id);
+          console.log("Calling onBallClick for:", d.name, d.id);
           justClickedBall = true;
           onBallClick(d.id);
           // Reset flag after a short delay (after SVG click event would have fired)
@@ -160,8 +160,8 @@ export const createChartRenderer = (
   const circles = ballGroups
     .append("circle")
     .attr("r", (d) => calculateRadius(d))
-    .attr("fill", "#60a5fa")
-    .attr("stroke", "#2563eb")
+    .attr("fill", (d) => getBallColors(d).fill)
+    .attr("stroke", (d) => getBallColors(d).stroke)
     .attr("stroke-width", 2);
 
   // Add labels
@@ -170,8 +170,9 @@ export const createChartRenderer = (
     .attr("text-anchor", "middle")
     .attr("dy", "0.3em")
     .style("pointer-events", "none")
-    .style("fill", "white")
+    .style("fill", (d) => getBallColors(d).text)
     .style("font-weight", "600")
+    .style("font-size", (d) => `${Math.max(10, calculateRadius(d) * 0.3)}px`)
     .text((d) => d.name);
 
   function tick() {
@@ -182,7 +183,7 @@ export const createChartRenderer = (
 
   // Click background to deselect
   svg.on("click", () => {
-    console.log('SVG background clicked, justClickedBall:', justClickedBall);
+    console.log("SVG background clicked, justClickedBall:", justClickedBall);
     if (!justClickedBall) {
       onBallClick(null);
     }
@@ -193,9 +194,15 @@ export const createChartRenderer = (
       .selectAll<SVGCircleElement, Ball>("g.ball circle")
       .transition()
       .duration(200)
-      .attr("fill", (d) => (d === selectedBall ? "#f59e0b" : "#60a5fa"))
-      .attr("stroke", (d) => (d === selectedBall ? "#d97706" : "#2563eb"))
+      .attr("fill", (d) => getBallColors(d, d === selectedBall).fill)
+      .attr("stroke", (d) => getBallColors(d, d === selectedBall).stroke)
       .attr("stroke-width", (d) => (d === selectedBall ? 4 : 2));
+
+    svg
+      .selectAll<SVGTextElement, Ball>("g.ball text")
+      .transition()
+      .duration(200)
+      .style("fill", (d) => getBallColors(d, d === selectedBall).text);
   };
 
   const updateBalls = (newBalls: Ball[], selectedBall?: Ball | null) => {
@@ -238,43 +245,59 @@ export const createChartRenderer = (
     const circles = updatedGroups.selectAll<SVGCircleElement, Ball>("circle");
     const circlesData = circles.data((d) => [d]);
 
-    circlesData
-      .join(
-        (enter) =>
-          enter
-            .append("circle")
-            .attr("r", (d) => calculateRadius(d))
-            .attr("fill", (d) => (d === selectedBall ? "#f59e0b" : "#60a5fa"))
-            .attr("stroke", (d) => (d === selectedBall ? "#d97706" : "#2563eb"))
-            .attr("stroke-width", (d) => (d === selectedBall ? 4 : 2)),
-        (update) =>
-          update
-            .transition()
-            .duration(300)
-            .ease(d3.easeBackOut)
-            .attr("r", (d) => calculateRadius(d))
-            .attr("fill", (d) => (d === selectedBall ? "#f59e0b" : "#60a5fa"))
-            .attr("stroke", (d) => (d === selectedBall ? "#d97706" : "#2563eb"))
-            .attr("stroke-width", (d) => (d === selectedBall ? 4 : 2))
-      );
+    circlesData.join(
+      (enter) =>
+        enter
+          .append("circle")
+          .attr("r", (d) => calculateRadius(d))
+          .attr("fill", (d) => getBallColors(d, d === selectedBall).fill)
+          .attr("stroke", (d) => getBallColors(d, d === selectedBall).stroke)
+          .attr("stroke-width", (d) => (d === selectedBall ? 4 : 2)),
+      (update) =>
+        update
+          .transition()
+          .duration(300)
+          .ease(d3.easeBackOut)
+          .attr("r", (d) => calculateRadius(d))
+          .attr("fill", (d) => getBallColors(d, d === selectedBall).fill)
+          .attr("stroke", (d) => getBallColors(d, d === selectedBall).stroke)
+          .attr("stroke-width", (d) => (d === selectedBall ? 4 : 2))
+    );
 
     // Update text
     const texts = updatedGroups.selectAll<SVGTextElement, Ball>("text");
     const textsData = texts.data((d) => [d]);
 
-    textsData
-      .join(
-        (enter) =>
-          enter
-            .append("text")
-            .attr("text-anchor", "middle")
-            .attr("dy", "0.3em")
-            .style("pointer-events", "none")
-            .style("fill", "white")
-            .style("font-weight", "600")
-            .text((d) => d.name),
-        (update) => update.text((d) => d.name)
-      );
+    textsData.join(
+      (enter) =>
+        enter
+          .append("text")
+          .attr("text-anchor", "middle")
+          .attr("dy", "0.3em")
+          .style("pointer-events", "none")
+          .style("fill", (d) => getBallColors(d, d === selectedBall).text)
+          .style("font-weight", "600")
+          .style(
+            "font-size",
+            (d) => `${Math.max(5, calculateRadius(d) * 0.2)}px`
+          )
+          .text((d) => d.name),
+      (update) =>
+        update
+          .transition()
+          .duration(300)
+          .ease(d3.easeBackOut)
+          .style("fill", (d) => getBallColors(d, d === selectedBall).text)
+          .style(
+            "font-size",
+            (d) => `${Math.max(5, calculateRadius(d) * 0.2)}px`
+          )
+          .tween("text", function (d) {
+            return function () {
+              d3.select(this).text(d.name);
+            };
+          })
+    );
 
     forceSimulation.alpha(1).restart();
   };

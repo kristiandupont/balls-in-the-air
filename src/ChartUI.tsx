@@ -100,6 +100,34 @@ export function* Sidebar(
             </div>
 
             <div class="flex flex-col gap-2">
+              <label class="text-sm font-medium text-gray-700">Color</label>
+              <input
+                type="range"
+                min="0"
+                max="360"
+                value={selectedBall.hue ?? 210}
+                oninput={(e: Event) => {
+                  const value = parseInt((e.target as HTMLInputElement).value);
+                  onUpdate({ hue: value });
+                }}
+                class="w-full h-2 rounded-lg appearance-none cursor-pointer"
+                style={`background: linear-gradient(to right,
+                  hsl(0, 75%, 65%),
+                  hsl(60, 75%, 65%),
+                  hsl(120, 75%, 65%),
+                  hsl(180, 75%, 65%),
+                  hsl(240, 75%, 65%),
+                  hsl(300, 75%, 65%),
+                  hsl(360, 75%, 65%)
+                );`}
+              />
+              <div
+                class="w-12 h-12 rounded-lg border-2 self-center"
+                style={`background: hsl(${selectedBall.hue ?? 210}, 75%, 65%); border-color: hsl(${selectedBall.hue ?? 210}, 75%, 45%);`}
+              />
+            </div>
+
+            <div class="flex flex-col gap-2">
               <label class="text-sm font-medium text-gray-700">
                 Last bumped
               </label>
