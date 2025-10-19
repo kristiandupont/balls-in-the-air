@@ -19,7 +19,7 @@ export function* TaskArena(this: Context) {
 
   for ({} of this) {
     yield (
-      <div class="w-full h-full">
+      <div class="size-full">
         <div
           ref={(el: HTMLDivElement | null) => {
             if (el) {
