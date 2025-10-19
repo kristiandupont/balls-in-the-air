@@ -90,12 +90,6 @@ export function* TaskController(
     refresh();
   };
 
-  const handleClose = () => {
-    selectedBallId = null;
-    isNewlyCreated = false;
-    refresh();
-  };
-
   for ({ width, height } of this) {
     yield (
       <>
@@ -120,7 +114,6 @@ export function* TaskController(
             onBump={handleBump}
             onUpdate={handleUpdate}
             onDelete={handleDelete}
-            onClose={handleClose}
           />
         )}
 
