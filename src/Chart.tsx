@@ -1,17 +1,15 @@
 import type { Context } from "@b9g/crank";
 import { loadBalls, saveBalls, type Ball } from "./storage";
-import { createChartRenderer, type ChartRenderer } from "./chartRenderer";
+import { CrankChart } from "./CrankChart";
 import { BallPropertiesPanel } from "./BallPropertiesPanel";
 
-// Inner component that creates the actual D3 chart
-function* D3ChartInner(
+// Inner component that creates the Crank chart
+function* ChartInner(
   this: Context,
   { width, height }: { width: number; height: number }
 ) {
   let selectedBallId: string | null = null;
-  let chartRenderer: ChartRenderer | null = null;
   let balls: Ball[] = loadBalls();
-  let chartKey = 0;
   let isNewlyCreated = false;
 
   const getSelectedBall = (): Ball | null => {
@@ -23,15 +21,13 @@ function* D3ChartInner(
     this.refresh();
   };
 
-  // Update ball sizes periodically (every minute)
+  // Update ball sizes periodically (every 300ms for smooth growth)
   const updateInterval = setInterval(() => {
-    if (chartRenderer) {
-      chartRenderer.updateBalls(balls, getSelectedBall());
-    }
+    refresh();
   }, 300);
 
   // Cleanup interval on unmount
-  this.addEventListener("cleanup", () => {
+  this.cleanup(() => {
     clearInterval(updateInterval);
   });
 
@@ -45,10 +41,6 @@ function* D3ChartInner(
     }
 
     isNewlyCreated = false;
-
-    if (chartRenderer) {
-      chartRenderer.updateSelection(getSelectedBall());
-    }
     refresh();
   };
 
@@ -59,10 +51,6 @@ function* D3ChartInner(
       b.id === selectedBallId ? { ...b, lastBumped: Date.now() } : b
     );
     saveBalls(balls);
-
-    if (chartRenderer) {
-      chartRenderer.updateBalls(balls, getSelectedBall());
-    }
     refresh();
   };
 
@@ -73,10 +61,6 @@ function* D3ChartInner(
       b.id === selectedBallId ? { ...b, ...updates } : b
     );
     saveBalls(balls);
-
-    if (chartRenderer) {
-      chartRenderer.updateBalls(balls, getSelectedBall());
-    }
     refresh();
   };
 
@@ -86,10 +70,6 @@ function* D3ChartInner(
     balls = balls.filter((b) => b.id !== selectedBallId);
     saveBalls(balls);
     selectedBallId = null;
-
-    if (chartRenderer) {
-      chartRenderer.updateBalls(balls, null);
-    }
     refresh();
   };
 
@@ -105,9 +85,6 @@ function* D3ChartInner(
     selectedBallId = newBall.id;
     isNewlyCreated = true;
 
-    if (chartRenderer) {
-      chartRenderer.updateBalls(balls, newBall);
-    }
     // Save after positions are initialized
     setTimeout(() => saveBalls(balls), 100);
     refresh();
@@ -116,9 +93,6 @@ function* D3ChartInner(
   const handleClose = () => {
     selectedBallId = null;
     isNewlyCreated = false;
-    if (chartRenderer) {
-      chartRenderer.updateSelection(null);
-    }
     refresh();
   };
 
@@ -134,28 +108,15 @@ function* D3ChartInner(
           </div>
 
           {/* Chart */}
-          <div
-            key={chartKey}
-            ref={(el: HTMLDivElement | null) => {
-              if (el) {
-                el.innerHTML = "";
-
-                if (chartRenderer) {
-                  chartRenderer.destroy();
-                }
-
-                chartRenderer = createChartRenderer(
-                  balls,
-                  width,
-                  height,
-                  handleBallClick
-                );
-
-                el.appendChild(chartRenderer.svg.node()!);
-              }
-            }}
-            class="w-full h-full relative z-10"
-          />
+          <div class="w-full h-full relative z-10">
+            <CrankChart
+              balls={balls}
+              width={width}
+              height={height}
+              onBallClick={handleBallClick}
+              selectedBall={getSelectedBall()}
+            />
+          </div>
         </div>
 
         {/* Floating UI elements */}
@@ -229,7 +190,7 @@ export function* BallsChart(this: Context) {
           }}
           class="size-full"
         >
-          <D3ChartInner width={dimensions.width} height={dimensions.height} />
+          <ChartInner width={dimensions.width} height={dimensions.height} />
         </div>
       </div>
     );
