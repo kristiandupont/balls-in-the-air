@@ -100,13 +100,6 @@ function* ChartInner(
     yield (
       <>
         <div class="w-full h-full relative">
-          {/* Title in background */}
-          <div class="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-0">
-            <h1 class="text-[16vw] font-black text-gray-100 tracking-[-7%]">
-              Balls in the Air
-            </h1>
-          </div>
-
           {/* Chart */}
           <div class="w-full h-full relative z-10">
             <CrankChart
