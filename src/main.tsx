@@ -2,7 +2,7 @@
 
 import "./style.css";
 import { renderer } from "@b9g/crank/dom";
-import { BallsChart } from "./Chart";
+import { TaskArena } from "./TaskArena";
 
 const Home = () => (
   <div class="h-screen w-screen bg-white overflow-hidden">
@@ -12,7 +12,7 @@ const Home = () => (
         Balls in the Air
       </h1>
     </div>
-    <BallsChart />
+    <TaskArena />
   </div>
 );
 

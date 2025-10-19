@@ -2,7 +2,7 @@ import type { Context } from "@b9g/crank";
 import type { Ball } from "./storage";
 import { calculateRadius, MILLISECONDS_PER_DAY } from "./storage";
 
-interface BallPropertiesPanelProps {
+interface TaskPropertiesPanelProps {
   selectedBall: Ball;
   isNewlyCreated: boolean;
   onBump: () => void;
@@ -11,7 +11,7 @@ interface BallPropertiesPanelProps {
   onClose: () => void;
 }
 
-export function BallPropertiesPanel(
+export function TaskPropertiesPanel(
   {
     selectedBall,
     isNewlyCreated,
@@ -19,13 +19,13 @@ export function BallPropertiesPanel(
     onUpdate,
     onDelete,
     onClose,
-  }: BallPropertiesPanelProps,
+  }: TaskPropertiesPanelProps,
   ctx: Context
 ) {
   return (
     <div class="fixed right-6 top-6 w-80 bg-white rounded-lg shadow p-6 flex flex-col gap-4 max-h-[calc(100vh-3rem)] overflow-y-auto z-50">
       <div class="flex items-center justify-between">
-        <h2 class="text-xl font-bold text-gray-800">Edit Ball</h2>
+        <h2 class="text-xl font-bold text-gray-800">Edit Task</h2>
         <button
           class="text-gray-500 hover:text-gray-700 cursor-pointer"
           onclick={onClose}
@@ -145,7 +145,7 @@ export function BallPropertiesPanel(
         class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium mt-auto"
         onclick={onDelete}
       >
-        Delete Ball
+        Delete Task
       </button>
     </div>
   );

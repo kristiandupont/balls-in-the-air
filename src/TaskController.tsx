@@ -1,10 +1,10 @@
 import type { Context } from "@b9g/crank";
 import { loadBalls, saveBalls, type Ball } from "./storage";
-import { CrankChart } from "./CrankChart";
-import { BallPropertiesPanel } from "./BallPropertiesPanel";
+import { TaskSimulation } from "./TaskSimulation";
+import { TaskPropertiesPanel } from "./TaskPropertiesPanel";
 
-// Inner component that creates the Crank chart
-function* ChartInner(
+// Controller component that manages state and interactions
+export function* TaskController(
   this: Context,
   { width, height }: { width: number; height: number }
 ) {
@@ -100,9 +100,9 @@ function* ChartInner(
     yield (
       <>
         <div class="w-full h-full relative">
-          {/* Chart */}
+          {/* Simulation */}
           <div class="w-full h-full relative z-10">
-            <CrankChart
+            <TaskSimulation
               balls={balls}
               width={width}
               height={height}
@@ -114,7 +114,7 @@ function* ChartInner(
 
         {/* Floating UI elements */}
         {getSelectedBall() && (
-          <BallPropertiesPanel
+          <TaskPropertiesPanel
             selectedBall={getSelectedBall()!}
             isNewlyCreated={isNewlyCreated}
             onBump={handleBump}
@@ -145,51 +145,5 @@ function* ChartInner(
         </button>
       </>
     );
-  }
-}
-
-// Outer component that determines dimensions and passes them to inner component
-export function* BallsChart(this: Context) {
-  let containerRef: HTMLDivElement | null = null;
-  let dimensions = { width: 800, height: 600 };
-  let resizeObserver: ResizeObserver | null = null;
-
-  const updateDimensions = () => {
-    if (containerRef) {
-      const rect = containerRef.getBoundingClientRect();
-      dimensions = {
-        width: rect.width || 800,
-        height: rect.height || 600,
-      };
-    }
-  };
-
-  for ({} of this) {
-    yield (
-      <div class="w-full h-full">
-        <div
-          ref={(el: HTMLDivElement | null) => {
-            if (el) {
-              containerRef = el;
-              updateDimensions();
-
-              if (!resizeObserver) {
-                resizeObserver = new ResizeObserver(() => {
-                  updateDimensions();
-                });
-                resizeObserver.observe(el);
-              }
-            }
-          }}
-          class="size-full"
-        >
-          <ChartInner width={dimensions.width} height={dimensions.height} />
-        </div>
-      </div>
-    );
-  }
-
-  if (resizeObserver) {
-    (resizeObserver as ResizeObserver).disconnect();
   }
 }

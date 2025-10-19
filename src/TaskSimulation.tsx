@@ -170,8 +170,8 @@ export interface ChartRenderer {
   destroy: () => void;
 }
 
-// Main chart component
-function* CrankChart(
+// Main simulation component
+function* TaskSimulation(
   this: Context,
   {
     balls,
@@ -363,5 +363,5 @@ function* CrankChart(
   }
 }
 
-// Export the main chart component for use in Chart.tsx
-export { CrankChart };
+// Export the main simulation component
+export { TaskSimulation };
