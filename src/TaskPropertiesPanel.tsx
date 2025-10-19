@@ -71,7 +71,7 @@ export function TaskPropertiesPanel(
           step="0.1"
           min="0.1"
           value={selectedBall.growthRate}
-          onchange={(e: Event) => {
+          oninput={(e: Event) => {
             const value = parseFloat((e.target as HTMLInputElement).value);
             if (!isNaN(value) && value > 0) {
               onUpdate({ growthRate: value });

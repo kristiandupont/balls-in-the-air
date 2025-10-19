@@ -15,7 +15,7 @@ export interface Ball {
 
 const STORAGE_KEY = "balls-data";
 const MIN_BALL_RADIUS = 20;
-const MAX_BALL_RADIUS = 100;
+const MAX_BALL_RADIUS = 200;
 const DEFAULT_HUE = 210;
 export const MILLISECONDS_PER_DAY = 1000 * 60 * 60 * 24;
 
