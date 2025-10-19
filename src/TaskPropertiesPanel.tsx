@@ -1,6 +1,7 @@
 import type { Context } from "@b9g/crank";
 import type { Ball } from "./storage";
 import { MILLISECONDS_PER_DAY } from "./storage";
+import { InfoHover } from "./InfoHover";
 
 interface TaskPropertiesPanelProps {
   selectedBall: Ball;
@@ -65,8 +66,9 @@ export function TaskPropertiesPanel(
       <hr class="border-gray-200" />
 
       <div class="flex flex-col gap-2">
-        <label class="text-sm font-medium text-gray-700">
-          Growth Rate (px/day)
+        <label class="text-sm font-medium flex items-center gap-2 text-gray-700">
+          <span>Growth Rate (px/day)</span>
+          <InfoHover text="For a task that to recur every 30 days, a growth rate of 6 works well. Try setting to a high number like 50000 for fun!" />
         </label>
         <input
           type="number"
