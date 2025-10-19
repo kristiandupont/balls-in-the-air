@@ -15,6 +15,7 @@ export interface Ball {
 
 const STORAGE_KEY = "balls-data";
 const MIN_BALL_RADIUS = 20;
+const MAX_BALL_RADIUS = 100;
 const DEFAULT_HUE = 210;
 export const MILLISECONDS_PER_DAY = 1000 * 60 * 60 * 24;
 
@@ -61,7 +62,10 @@ export function saveBalls(balls: Ball[]): void {
 
 export function calculateRadius(ball: Ball): number {
   const daysSinceBump = (Date.now() - ball.lastBumped) / MILLISECONDS_PER_DAY;
-  return MIN_BALL_RADIUS + daysSinceBump * ball.growthRate;
+  return Math.min(
+    MIN_BALL_RADIUS + daysSinceBump * ball.growthRate,
+    MAX_BALL_RADIUS
+  );
 }
 
 export function getBallColors(ball: Ball, isSelected: boolean = false) {
