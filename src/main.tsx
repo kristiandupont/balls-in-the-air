@@ -8,7 +8,7 @@ const Home = () => (
   <div class="h-screen w-screen bg-white overflow-hidden">
     {/* Title in background */}
     <div class="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-0">
-      <h1 class="text-[16vw] font-black text-gray-100 tracking-[-7%]">
+      <h1 class="text-[16vw] font-black text-gray-100 tracking-[-0.07em]">
         Balls in the Air
       </h1>
     </div>
