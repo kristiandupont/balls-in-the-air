@@ -12,6 +12,7 @@ function* D3ChartInner(
   let chartRenderer: ChartRenderer | null = null;
   let balls: Ball[] = loadBalls();
   let chartKey = 0;
+  let isNewlyCreated = false;
 
   const getSelectedBall = (): Ball | null => {
     return balls.find((b) => b.id === selectedBallId) || null;
@@ -42,6 +43,8 @@ function* D3ChartInner(
       // Toggle selection by ID
       selectedBallId = selectedBallId === ballId ? null : ballId;
     }
+
+    isNewlyCreated = false;
 
     if (chartRenderer) {
       chartRenderer.updateSelection(getSelectedBall());
@@ -100,6 +103,7 @@ function* D3ChartInner(
 
     balls = [...balls, newBall];
     selectedBallId = newBall.id;
+    isNewlyCreated = true;
 
     if (chartRenderer) {
       chartRenderer.updateBalls(balls, newBall);
@@ -111,6 +115,7 @@ function* D3ChartInner(
 
   const handleClose = () => {
     selectedBallId = null;
+    isNewlyCreated = false;
     if (chartRenderer) {
       chartRenderer.updateSelection(null);
     }
@@ -154,14 +159,36 @@ function* D3ChartInner(
         </div>
 
         {/* Floating UI elements */}
-        <BallPropertiesPanel
-          selectedBall={getSelectedBall()}
-          onBump={handleBump}
-          onUpdate={handleUpdate}
-          onDelete={handleDelete}
-          onAdd={handleAdd}
-          onClose={handleClose}
-        />
+        {getSelectedBall() && (
+          <BallPropertiesPanel
+            selectedBall={getSelectedBall()!}
+            isNewlyCreated={isNewlyCreated}
+            onBump={handleBump}
+            onUpdate={handleUpdate}
+            onDelete={handleDelete}
+            onClose={handleClose}
+          />
+        )}
+
+        {/* Add button */}
+        <button
+          class="fixed left-6 bottom-6 w-16 h-16 bg-gray-100 text-gray-500 rounded-full hover:bg-gray-600 cursor-pointer transition-colors shadow flex items-center justify-center z-50"
+          onclick={handleAdd}
+          title="Add New Ball"
+        >
+          <svg
+            width="32"
+            height="32"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+          >
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+        </button>
       </>
     );
   }
