@@ -21,7 +21,7 @@ export function TaskPropertiesPanel(
   ctx: Context
 ) {
   return (
-    <div class="fixed right-6 top-6 w-80 bg-white rounded-lg shadow p-6 flex flex-col gap-4 max-h-[calc(100vh-3rem)] overflow-y-auto z-50">
+    <div class="fixed right-6 top-6 w-80 bg-white rounded-lg shadow border border-gray-100 p-6 flex flex-col gap-4 max-h-[calc(100vh-3rem)] overflow-y-auto z-50">
       <div class="flex flex-col gap-2">
         <textarea
           value={selectedBall.name}
@@ -61,6 +61,8 @@ export function TaskPropertiesPanel(
           days ago)
         </p>
       </div>
+
+      <hr class="border-gray-200" />
 
       <div class="flex flex-col gap-2">
         <label class="text-sm font-medium text-gray-700">
