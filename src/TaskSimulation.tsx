@@ -43,25 +43,50 @@ function* BallCircle(
   let prevAttrs = getCircleAttrs(ball, isSelected);
 
   // Enter animation
-  this.schedule(async (circle: SVGCircleElement) => {
+  this.schedule(async (g: SVGGElement) => {
     const targetR = getCircleAttrs(ball, isSelected).r;
-    circle.style.transition = "none";
-    circle.setAttribute("r", "0");
-    void circle.getBoundingClientRect(); // force reflow
-    circle.style.transition = "r 300ms cubic-bezier(0.68, -0.55, 0.265, 1.55)";
-    circle.setAttribute("r", String(targetR));
+    const circles = g.querySelectorAll('circle');
+    circles.forEach(circle => {
+      circle.style.transition = "none";
+      circle.setAttribute("r", "0");
+    });
+    void g.getBoundingClientRect(); // force reflow
+    circles.forEach((circle, i) => {
+      circle.style.transition = "r 300ms cubic-bezier(0.68, -0.55, 0.265, 1.55)";
+      if (i === 0) {
+        // Outer border circle
+        circle.setAttribute("r", String(targetR));
+      } else if (i === 1) {
+        // Moon base circle (95% of radius)
+        circle.setAttribute("r", String(targetR * 0.95));
+      } else {
+        // Inner white circle (92% of radius)
+        circle.setAttribute("r", String(targetR * 0.92));
+      }
+    });
   });
 
   // Exit animation
-  this.cleanup(async (circle: SVGCircleElement) => {
-    circle.style.transition = "r 300ms ease-out, opacity 300ms ease-out";
-    circle.setAttribute("r", "0");
-    circle.style.opacity = "0";
+  this.cleanup(async (g: SVGGElement) => {
+    const circles = g.querySelectorAll('circle');
+    circles.forEach(circle => {
+      circle.style.transition = "r 300ms ease-out, opacity 300ms ease-out";
+      circle.setAttribute("r", "0");
+      (circle as SVGCircleElement).style.opacity = "0";
+    });
     await new Promise((resolve) => setTimeout(resolve, 300));
   });
 
   for ({ ball, isSelected } of this) {
     const attrs = getCircleAttrs(ball, isSelected);
+    const radius = attrs.r;
+    const colors = getBallColors(ball, isSelected);
+
+    // Fixed angle of 45 degrees for now (we can make this dynamic later)
+    const offsetAngle = 45 * (Math.PI / 180); // Convert to radians
+    const offsetDistance = radius * 0.03; // 3% offset
+    const offsetX = Math.cos(offsetAngle) * offsetDistance;
+    const offsetY = Math.sin(offsetAngle) * offsetDistance;
 
     // Handle updates with transitions
     if (
@@ -74,13 +99,31 @@ function* BallCircle(
     }
 
     yield (
-      <circle
-        r={attrs.r}
-        fill={attrs.fill}
-        stroke={attrs.stroke}
-        stroke-width={attrs.strokeWidth}
-        style="filter: drop-shadow(0 0 5px rgba(0, 0, 0, 0.5)); transition: r 300ms cubic-bezier(0.68, -0.55, 0.265, 1.55), stroke 200ms ease-out, stroke-width 200ms ease-out;"
-      />
+      <g>
+        {/* Outer border circle */}
+        <circle
+          r={radius}
+          fill="white"
+          stroke={attrs.stroke}
+          stroke-width={attrs.strokeWidth}
+          style="filter: drop-shadow(0 0 5px rgba(0, 0, 0, 0.5)); transition: r 300ms cubic-bezier(0.68, -0.55, 0.265, 1.55), stroke 200ms ease-out, stroke-width 200ms ease-out;"
+        />
+        {/* Moon base circle - same hue as border, slightly darker */}
+        <circle
+          r={radius * 0.95}
+          fill={colors.stroke}
+          opacity="0.15"
+          style="transition: r 300ms cubic-bezier(0.68, -0.55, 0.265, 1.55);"
+        />
+        {/* Inner white circle - offset to create crescent effect */}
+        <circle
+          cx={offsetX}
+          cy={offsetY}
+          r={radius * 0.92}
+          fill="white"
+          style="transition: r 300ms cubic-bezier(0.68, -0.55, 0.265, 1.55);"
+        />
+      </g>
     );
   }
 }
