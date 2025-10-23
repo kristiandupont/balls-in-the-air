@@ -7,15 +7,20 @@ export function* TaskArena(this: Context) {
   let dimensions = { width: 800, height: 600 };
   let resizeObserver: ResizeObserver | null = null;
 
-  const updateDimensions = () => {
-    if (containerRef) {
-      const rect = containerRef.getBoundingClientRect();
-      dimensions = {
-        width: rect.width || 800,
-        height: rect.height || 600,
-      };
-    }
-  };
+  const updateDimensions = () =>
+    this.refresh(() => {
+      if (containerRef) {
+        const rect = containerRef.getBoundingClientRect();
+        const newWidth = rect.width || 800;
+        const newHeight = rect.height || 600;
+        if (newWidth !== dimensions.width || newHeight !== dimensions.height) {
+          dimensions = {
+            width: newWidth,
+            height: newHeight,
+          };
+        }
+      }
+    });
 
   for ({} of this) {
     yield (
