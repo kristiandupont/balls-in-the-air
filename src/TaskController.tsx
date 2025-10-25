@@ -119,7 +119,7 @@ export function* TaskController(
 
         {/* Add button */}
         <button
-          class="fixed left-6 bottom-6 w-16 h-16 bg-gray-100 text-gray-500 rounded-full hover:bg-gray-300 cursor-pointer transition-colors shadow flex items-center justify-center z-50"
+          class="fixed right-6 bottom-6 w-16 h-16 bg-gray-100 text-gray-500 rounded-full hover:bg-gray-300 cursor-pointer transition-colors shadow flex items-center justify-center z-50"
           onclick={handleAdd}
           title="Add New Task"
         >
