@@ -25,7 +25,7 @@ function* Home(this: Context) {
         {/* Help button in upper left corner */}
         <button
           onclick={helpCardVisible ? hideHelpCard : showHelpCard}
-          class="absolute cursor-pointer top-4 left-6 z-20 rounded-full text-pink-200 hover:text-pink-400 text-7xl font-black transition-colors"
+          class="absolute cursor-pointer top-4 left-6 z-20 rounded-full text-pink-200 hover:text-pink-600 text-7xl font-black transition-colors duration-500"
           title="Help"
         >
           ?
