@@ -42,6 +42,15 @@ function* Home(this: Context) {
               "bump" them. Think of it as a live todo list that keeps important
               recurring tasks visible.
             </p>
+            <p class="mb-4">
+              <a
+                href="https://github.com/kristiandupont/balls-in-the-air"
+                target="_blank"
+                class="text-blue-500 hover:text-blue-700"
+              >
+                View source code
+              </a>
+            </p>
             <button
               onclick={hideHelpCard}
               class="w-full cursor-pointer bg-gray-900 hover:bg-gray-700 text-white py-2 px-4 rounded transition-colors"
