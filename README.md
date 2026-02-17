@@ -4,6 +4,9 @@ A visual task management tool where tasks grow over time until you "bump" them. 
 
 **[Try it live →](https://kristiandupont.github.io/balls-in-the-air/)**
 
+![balls-in-the-air](https://github.com/user-attachments/assets/de2e3290-5dde-4434-aa8f-96c7c27802bc)
+
+
 ## How it works
 
 - Each task is represented as a growing ball
