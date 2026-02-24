@@ -1,7 +1,7 @@
 import type { Context } from "@b9g/crank";
 import * as d3 from "d3";
 import type { Ball } from "../storage";
-import { calculateRadius } from "../storage";
+import { calculateRadius } from "./calculateRadius";
 import { createForceSimulation } from "./createForceSimulation";
 import { CRESCENT_CONFIG } from "./config";
 import { updateCrescentAngle } from "./updateCrescentAngle";

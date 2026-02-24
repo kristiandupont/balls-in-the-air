@@ -14,9 +14,9 @@ export interface Ball {
 }
 
 const STORAGE_KEY = "balls-data";
-const MIN_BALL_RADIUS = 20;
-const MAX_BALL_RADIUS = 200;
-const DEFAULT_HUE = 210;
+export const MIN_BALL_RADIUS = 20;
+export const MAX_BALL_RADIUS = 200;
+export const DEFAULT_HUE = 210;
 export const MILLISECONDS_PER_DAY = 1000 * 60 * 60 * 24;
 
 const DEFAULT_BALLS: Ball[] = [
@@ -58,64 +58,4 @@ export function saveBalls(balls: Ball[]): void {
   } catch (error) {
     console.error("Failed to save balls to localStorage:", error);
   }
-}
-
-export function calculateRadius(ball: Ball): number {
-  const daysSinceBump = (Date.now() - ball.lastBumped) / MILLISECONDS_PER_DAY;
-  return Math.min(
-    MIN_BALL_RADIUS + daysSinceBump * ball.growthRate,
-    MAX_BALL_RADIUS
-  );
-}
-
-export function getBallColors(ball: Ball, isSelected: boolean = false) {
-  const hue = ball.hue ?? DEFAULT_HUE;
-
-  if (isSelected) {
-    // Darker version when selected
-    return {
-      fill: `hsl(${hue}, 75%, 65%)`,
-      stroke: `hsl(${hue}, 75%, 45%)`,
-      text: `hsl(${hue}, 75%, 45%)`,
-    };
-  }
-
-  return {
-    fill: `hsl(${hue}, 75%, 50%)`,
-    stroke: `hsl(${hue}, 75%, 30%)`,
-    text: `hsl(${hue}, 75%, 35%)`,
-  };
-}
-
-export function calculateTextSize(ball: Ball): number {
-  const radius = calculateRadius(ball);
-  const lines = ball.name.split("\n");
-  const lineCount = lines.length;
-  const longestLine = Math.max(...lines.map((line) => line.length), 1);
-
-  // Base size: proportion of radius
-  let baseSize = radius * 0.35;
-
-  // Adjust for text length - longer text needs smaller font
-  // Assume ~0.6 * fontSize per character width
-  const estimatedTextWidth = longestLine * 0.6;
-  const availableWidth = radius * 1.6; // Ball diameter minus some padding
-  if (estimatedTextWidth > availableWidth / baseSize) {
-    baseSize = availableWidth / estimatedTextWidth;
-  }
-
-  // Adjust for line count - more lines need smaller font
-  const lineHeight = 1.2;
-  const totalTextHeight = lineCount * lineHeight;
-  const availableHeight = radius * 1.6; // Ball diameter minus some padding
-  if (totalTextHeight > availableHeight / baseSize) {
-    baseSize = availableHeight / totalTextHeight;
-  }
-
-  // Apply user's text scale preference
-  const textScale = ball.textScale ?? 1.0;
-  const finalSize = baseSize * textScale;
-
-  // Minimum size for readability
-  return Math.max(2, finalSize);
 }

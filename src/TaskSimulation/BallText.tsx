@@ -1,6 +1,41 @@
 import type { Context } from "@b9g/crank";
-import { calculateTextSize, getBallColors, type Ball } from "../storage";
+import { type Ball } from "../storage";
+import { calculateRadius } from "./calculateRadius";
+import { getBallColors } from "./getBallColors";
 import { ANIMATION_DURATIONS } from "./config";
+
+function calculateTextSize(ball: Ball): number {
+  const radius = calculateRadius(ball);
+  const lines = ball.name.split("\n");
+  const lineCount = lines.length;
+  const longestLine = Math.max(...lines.map((line) => line.length), 1);
+
+  // Base size: proportion of radius
+  let baseSize = radius * 0.35;
+
+  // Adjust for text length - longer text needs smaller font
+  // Assume ~0.6 * fontSize per character width
+  const estimatedTextWidth = longestLine * 0.6;
+  const availableWidth = radius * 1.6; // Ball diameter minus some padding
+  if (estimatedTextWidth > availableWidth / baseSize) {
+    baseSize = availableWidth / estimatedTextWidth;
+  }
+
+  // Adjust for line count - more lines need smaller font
+  const lineHeight = 1.2;
+  const totalTextHeight = lineCount * lineHeight;
+  const availableHeight = radius * 1.6; // Ball diameter minus some padding
+  if (totalTextHeight > availableHeight / baseSize) {
+    baseSize = availableHeight / totalTextHeight;
+  }
+
+  // Apply user's text scale preference
+  const textScale = ball.textScale ?? 1.0;
+  const finalSize = baseSize * textScale;
+
+  // Minimum size for readability
+  return Math.max(2, finalSize);
+}
 
 export const getTextAttrs = (d: Ball, isSelected: boolean) => ({
   fill: getBallColors(d, isSelected).text,

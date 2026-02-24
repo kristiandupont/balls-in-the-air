@@ -1,5 +1,7 @@
 import type { Context } from "@b9g/crank";
-import { type Ball, calculateRadius, getBallColors } from "../storage";
+import { type Ball } from "../storage";
+import { calculateRadius } from "./calculateRadius";
+import { getBallColors } from "./getBallColors";
 import { ANIMATION_DURATIONS, CRESCENT_CONFIG } from "./config";
 
 export const getCircleAttrs = (d: Ball, isSelected: boolean) => ({

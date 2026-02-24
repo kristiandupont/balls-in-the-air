@@ -1,5 +1,6 @@
 import * as d3 from "d3";
-import { type Ball, calculateRadius } from "../storage";
+import { type Ball } from "../storage";
+import { calculateRadius } from "./calculateRadius";
 import { SIMULATION_CONFIG } from "./config";
 
 // Helper to create force simulation
