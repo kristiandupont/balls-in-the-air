@@ -1,12 +1,12 @@
 import type { Context } from "@b9g/crank";
 import { loadBalls, saveBalls, type Ball } from "./storage";
-import { TaskSimulation } from "./TaskSimulation";
+import { TaskSimulation } from "./TaskSimulation/TaskSimulation";
 import { TaskPropertiesPanel } from "./TaskPropertiesPanel";
 
 // Controller component that manages state and interactions
 export function* TaskController(
   this: Context,
-  { width, height }: { width: number; height: number }
+  { width, height }: { width: number; height: number },
 ) {
   let selectedBallId: string | null = null;
   let balls: Ball[] = loadBalls();
@@ -48,7 +48,7 @@ export function* TaskController(
     if (!selectedBallId) return;
 
     balls = balls.map((b) =>
-      b.id === selectedBallId ? { ...b, lastBumped: Date.now() } : b
+      b.id === selectedBallId ? { ...b, lastBumped: Date.now() } : b,
     );
     saveBalls(balls);
     refresh();
@@ -58,7 +58,7 @@ export function* TaskController(
     if (!selectedBallId) return;
 
     balls = balls.map((b) =>
-      b.id === selectedBallId ? { ...b, ...updates } : b
+      b.id === selectedBallId ? { ...b, ...updates } : b,
     );
     saveBalls(balls);
     refresh();
