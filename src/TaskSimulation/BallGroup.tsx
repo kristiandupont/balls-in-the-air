@@ -1,6 +1,6 @@
 import type { Context } from "@b9g/crank";
 import { type Ball } from "../storage";
-import { calculateRadius } from "../calculateRadius";
+import { calculateRadius } from "../TaskSimulation/calculateRadius";
 import { BallText } from "./BallText";
 import { BallCircle } from "./BallCircle";
 
