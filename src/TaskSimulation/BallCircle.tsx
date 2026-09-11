@@ -6,7 +6,7 @@ import { ANIMATION_DURATIONS, CRESCENT_CONFIG } from "./config";
 
 export const getCircleAttrs = (d: Ball, isSelected: boolean) => ({
   r: calculateRadius(d),
-  fill: "white",
+  fill: getBallColors(d, isSelected).surface,
   stroke: getBallColors(d, isSelected).stroke,
   strokeWidth: isSelected ? 6 : 4,
 });
@@ -95,10 +95,10 @@ export function* BallCircle(
         {/* Outer border circle */}
         <circle
           r={radius}
-          fill="white"
+          fill={colors.surface}
           stroke={attrs.stroke}
           stroke-width={attrs.strokeWidth}
-          style={`filter: drop-shadow(0 0 5px rgba(0, 0, 0, 0.5)); transition: r ${ANIMATION_DURATIONS.RADIUS_TRANSITION}ms cubic-bezier(0.68, -0.55, 0.265, 1.55), stroke ${ANIMATION_DURATIONS.COLOR_TRANSITION}ms ease-out, stroke-width ${ANIMATION_DURATIONS.COLOR_TRANSITION}ms ease-out;`}
+          style={`filter: drop-shadow(0 0 5px rgba(0, 0, 0, 0.5)); transition: r ${ANIMATION_DURATIONS.RADIUS_TRANSITION}ms cubic-bezier(0.68, -0.55, 0.265, 1.55), fill ${ANIMATION_DURATIONS.COLOR_TRANSITION}ms ease-out, stroke ${ANIMATION_DURATIONS.COLOR_TRANSITION}ms ease-out, stroke-width ${ANIMATION_DURATIONS.COLOR_TRANSITION}ms ease-out;`}
         />
         {/* Moon base circle - same hue as border, slightly darker */}
         <circle
@@ -112,8 +112,8 @@ export function* BallCircle(
           cx={offsetX}
           cy={offsetY}
           r={radius * CRESCENT_CONFIG.INNER_CIRCLE_SCALE}
-          fill="white"
-          style={`transition: r ${ANIMATION_DURATIONS.RADIUS_TRANSITION}ms cubic-bezier(0.68, -0.55, 0.265, 1.55);`}
+          fill={colors.surface}
+          style={`transition: r ${ANIMATION_DURATIONS.RADIUS_TRANSITION}ms cubic-bezier(0.68, -0.55, 0.265, 1.55), fill ${ANIMATION_DURATIONS.COLOR_TRANSITION}ms ease-out;`}
           ref={(el: SVGCircleElement | null) => {
             if (el) {
               onRegisterCrescent(ball, el);

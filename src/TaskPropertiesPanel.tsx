@@ -1,7 +1,8 @@
 import type { Context } from "@b9g/crank";
 import type { Ball } from "./storage";
 import { TARGET_BALL_RADIUS } from "./storage";
-import { formatRelativeTime } from "./formatRelativeTime";
+import { formatDuration, formatRelativeTime } from "./formatTime";
+import { dueTime, isOverdue, overdueBy } from "./dueness";
 import {
   FREQUENCY_UNITS,
   formatFrequency,
@@ -18,6 +19,8 @@ interface TaskPropertiesPanelProps {
   onUpdate: (updates: Partial<Ball>) => void;
   onDelete: () => void;
 }
+
+const HOUR = 1000 * 60 * 60;
 
 const toDateInputValue = (timestamp: number) =>
   new Date(timestamp).toISOString().split("T")[0];
@@ -148,6 +151,15 @@ export function* TaskPropertiesPanel(
     }
 
     const lastBumpedDate = new Date(selectedBall.lastBumped);
+    const overdue = isOverdue(selectedBall);
+    const remaining = dueTime(selectedBall) - Date.now();
+    const dueLabel = overdue
+      ? overdueBy(selectedBall) < HOUR
+        ? "Due now"
+        : `Overdue by ${formatDuration(overdueBy(selectedBall))}`
+      : remaining < HOUR
+        ? "Due now"
+        : `Due in ${formatDuration(remaining)}`;
 
     yield (
       <div class="fixed right-6 top-6 w-80 bg-white rounded-lg shadow border border-gray-100 p-6 flex flex-col gap-4 max-h-[calc(100vh-3rem)] overflow-y-auto z-50">
@@ -186,6 +198,15 @@ export function* TaskPropertiesPanel(
           <div class="flex flex-col gap-1">
             <p class="text-sm text-gray-700">
               Last bumped {formatRelativeTime(selectedBall.lastBumped)}
+            </p>
+            <p
+              class={
+                overdue
+                  ? "text-sm font-medium text-red-600"
+                  : "text-sm text-gray-500"
+              }
+            >
+              {dueLabel}
             </p>
             <p class="text-xs text-gray-400">
               {lastBumpedDate.toLocaleDateString()} &middot;{" "}

@@ -2,7 +2,8 @@ import type { Context } from "@b9g/crank";
 import { type Ball } from "../storage";
 import { calculateRadius } from "./calculateRadius";
 import { getBallColors } from "./getBallColors";
-import { formatRelativeTimeShort } from "../formatRelativeTime";
+import { formatDurationShort, formatRelativeTimeShort } from "../formatTime";
+import { isOverdue, overdueBy } from "../dueness";
 import { ANIMATION_DURATIONS, BALL_TEXT_CONFIG } from "./config";
 
 const LINE_HEIGHT = 1.2;
@@ -53,12 +54,24 @@ export function showsAgeLabel(ball: Ball): boolean {
   );
 }
 
+// "3d ago" until the ball is due, "3d overdue" after that
+export function ageLabelText(ball: Ball): string {
+  if (!isOverdue(ball)) {
+    return formatRelativeTimeShort(ball.lastBumped);
+  }
+  const over = overdueBy(ball);
+  return over < 1000 * 60 * 60
+    ? "due now"
+    : `${formatDurationShort(over)} overdue`;
+}
+
 export function renderBallText(ball: Ball) {
   const fontSize = calculateTextSize(ball);
   const lines = ball.name.split("\n");
   const lineHeightPx = fontSize * LINE_HEIGHT;
 
   const withAge = showsAgeLabel(ball);
+  const overdue = isOverdue(ball);
   const ageSize = Math.max(
     BALL_TEXT_CONFIG.AGE_LABEL_MIN_SIZE,
     fontSize * BALL_TEXT_CONFIG.AGE_LABEL_SCALE,
@@ -85,9 +98,15 @@ export function renderBallText(ball: Ball) {
     <tspan
       x={0}
       y={startY + (lines.length - 1) * lineHeightPx + ageOffset}
-      style={`font-size: ${ageSize}px; font-weight: 400; opacity: ${BALL_TEXT_CONFIG.AGE_LABEL_OPACITY};`}
+      style={`font-size: ${ageSize}px; font-weight: ${
+        overdue ? 700 : 400
+      }; opacity: ${
+        overdue
+          ? BALL_TEXT_CONFIG.OVERDUE_LABEL_OPACITY
+          : BALL_TEXT_CONFIG.AGE_LABEL_OPACITY
+      };`}
     >
-      {formatRelativeTimeShort(ball.lastBumped)}
+      {ageLabelText(ball)}
     </tspan>,
   ];
 }

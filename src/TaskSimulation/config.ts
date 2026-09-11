@@ -13,6 +13,7 @@ export const BALL_TEXT_CONFIG = {
   AGE_LABEL_SCALE: 0.5,
   AGE_LABEL_MIN_SIZE: 6,
   AGE_LABEL_OPACITY: 0.6,
+  OVERDUE_LABEL_OPACITY: 0.9,
 } as const;
 
 export const ANIMATION_DURATIONS = {
