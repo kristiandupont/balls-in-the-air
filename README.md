@@ -10,8 +10,9 @@ A visual task management tool where tasks grow over time until you "bump" them. 
 ## How it works
 
 - Each task is represented as a growing ball
-- Tasks grow based on their growth rate (pixels per day)
-- Click a task to edit it or "bump" it (reset the timer)
+- Each task has an expected frequency; the ball grows from a 20px radius to a 150px radius over that period, and keeps growing (up to 200px) after it is overdue
+- Balls past an 80px radius also show how long ago they were last bumped
+- Click a task to see its details and "bump" it (reset the timer); the pencil button opens the editor
 - Drag tasks around the arena
 - Tasks bounce off each other using physics simulation
 

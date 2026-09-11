@@ -1,5 +1,10 @@
 import type { Context } from "@b9g/crank";
-import { loadBalls, saveBalls, type Ball } from "./storage";
+import {
+  DEFAULT_FREQUENCY_DAYS,
+  loadBalls,
+  saveBalls,
+  type Ball,
+} from "./storage";
 import { TaskSimulation } from "./TaskSimulation/TaskSimulation";
 import { TaskPropertiesPanel } from "./TaskPropertiesPanel";
 
@@ -78,7 +83,7 @@ export function* TaskController(
       id: Date.now().toString(),
       name: "New Task",
       lastBumped: Date.now(),
-      growthRate: 2,
+      frequencyDays: DEFAULT_FREQUENCY_DAYS,
     };
 
     balls = [...balls, newBall];

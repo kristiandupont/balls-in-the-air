@@ -7,6 +7,14 @@ export const CRESCENT_CONFIG = {
   INITIAL_ANGLE_DEG: 45,
 } as const;
 
+export const BALL_TEXT_CONFIG = {
+  // Balls with at least this radius also show when they were last bumped
+  AGE_LABEL_MIN_RADIUS: 80,
+  AGE_LABEL_SCALE: 0.5,
+  AGE_LABEL_MIN_SIZE: 6,
+  AGE_LABEL_OPACITY: 0.6,
+} as const;
+
 export const ANIMATION_DURATIONS = {
   ENTER_EXIT: 300,
   RADIUS_TRANSITION: 300,
